@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "Chạy Auction Arena",
+    "Projects": [
+      {
+        "Path": "AuctionArena.WinForms\\AuctionArena.WinForms.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

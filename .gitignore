@@ -1,0 +1,12 @@
+.vs/
+**/bin/
+**/obj/
+DONG_GOI/BAN_CHAY_LOCAL/
+DONG_GOI/SETUP_PAYLOAD/
+AuctionArena_BanChay.zip
+AuctionArena_Setup.exe
+
+_BAN_CHAY_TAM/
+*.user
+*.suo
+*.log

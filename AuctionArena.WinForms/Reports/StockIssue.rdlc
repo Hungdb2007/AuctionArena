@@ -1,0 +1,335 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2008/01/reportdefinition">
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="Dummy">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString/>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="IssueData">
+      <Fields>
+        <Field Name="IssueCode">
+          <DataField>IssueCode</DataField>
+        </Field>
+        <Field Name="InvoiceCode">
+          <DataField>InvoiceCode</DataField>
+        </Field>
+        <Field Name="RecipientName">
+          <DataField>RecipientName</DataField>
+        </Field>
+        <Field Name="IssuedAt">
+          <DataField>IssuedAt</DataField>
+        </Field>
+        <Field Name="ItemCode">
+          <DataField>ItemCode</DataField>
+        </Field>
+        <Field Name="ItemName">
+          <DataField>ItemName</DataField>
+        </Field>
+        <Field Name="RecipientDocument">
+          <DataField>RecipientDocument</DataField>
+        </Field>
+        <Field Name="RecipientRelation">
+          <DataField>RecipientRelation</DataField>
+        </Field>
+        <Field Name="DeliveryMethod">
+          <DataField>DeliveryMethod</DataField>
+        </Field>
+        <Field Name="ConditionAtDelivery">
+          <DataField>ConditionAtDelivery</DataField>
+        </Field>
+        <Field Name="LocationAtIssue">
+          <DataField>LocationAtIssue</DataField>
+        </Field>
+      </Fields>
+      <Query>
+        <DataSourceName>Dummy</DataSourceName>
+        <CommandText/>
+      </Query>
+    </DataSet>
+  </DataSets>
+  <Body>
+    <ReportItems>
+      <Textbox Name="ReportTitle">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>PHIẾU XUẤT KHO – BIÊN BẢN BÀN GIAO</Value>
+                <Style>
+                  <FontSize>16pt</FontSize>
+                  <Color>#172038</Color>
+                  <FontWeight>Bold</FontWeight>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>0.12in</Top>
+        <Left>0.2in</Left>
+        <Height>0.5in</Height>
+        <Width>7.6in</Width>
+        <Style/>
+      </Textbox>
+      <Textbox Name="Hdr_IssueCode">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>="Số phiếu: " &amp; First(Fields!IssueCode.Value, "IssueData")</Value>
+                <Style>
+                  <FontSize>9pt</FontSize>
+                  <Color>#172038</Color>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>0.76in</Top>
+        <Left>0.2in</Left>
+        <Height>0.25in</Height>
+        <Width>7.0in</Width>
+        <Style/>
+      </Textbox>
+      <Textbox Name="Hdr_InvoiceCode">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>="Hóa đơn: " &amp; First(Fields!InvoiceCode.Value, "IssueData")</Value>
+                <Style>
+                  <FontSize>9pt</FontSize>
+                  <Color>#172038</Color>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>1.08in</Top>
+        <Left>0.2in</Left>
+        <Height>0.25in</Height>
+        <Width>7.0in</Width>
+        <Style/>
+      </Textbox>
+      <Textbox Name="Hdr_RecipientName">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>="Người nhận: " &amp; First(Fields!RecipientName.Value, "IssueData") &amp; " | Giấy tờ: " &amp; First(Fields!RecipientDocument.Value, "IssueData")</Value>
+                <Style>
+                  <FontSize>9pt</FontSize>
+                  <Color>#172038</Color>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>1.40in</Top>
+        <Left>0.2in</Left>
+        <Height>0.25in</Height>
+        <Width>7.0in</Width>
+        <Style/>
+      </Textbox>
+      <Textbox Name="Hdr_Date">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>="Giao: " &amp; Format(First(Fields!IssuedAt.Value, "IssueData"), "dd/MM/yyyy HH:mm") &amp; " | " &amp; First(Fields!DeliveryMethod.Value, "IssueData")</Value>
+                <Style>
+                  <FontSize>9pt</FontSize>
+                  <Color>#172038</Color>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>1.72in</Top>
+        <Left>0.2in</Left>
+        <Height>0.25in</Height>
+        <Width>7.0in</Width>
+        <Style/>
+      </Textbox>
+      <Tablix Name="MainTable">
+        <TablixBody>
+          <TablixColumns>
+            <TablixColumn>
+              <Width>1.8in</Width>
+            </TablixColumn>
+            <TablixColumn>
+              <Width>5.6in</Width>
+            </TablixColumn>
+          </TablixColumns>
+          <TablixRows>
+            <TablixRow>
+              <Height>0.35in</Height>
+              <TablixCells>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="H_0">
+                      <CanGrow>true</CanGrow>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>Mã hiện vật</Value>
+                              <Style>
+                                <FontSize>8pt</FontSize>
+                                <FontWeight>Bold</FontWeight>
+                              </Style>
+                            </TextRun>
+                          </TextRuns>
+                          <Style/>
+                        </Paragraph>
+                      </Paragraphs>
+                      <Style/>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="H_1">
+                      <CanGrow>true</CanGrow>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>Hiện vật / Tình trạng</Value>
+                              <Style>
+                                <FontSize>8pt</FontSize>
+                                <FontWeight>Bold</FontWeight>
+                              </Style>
+                            </TextRun>
+                          </TextRuns>
+                          <Style/>
+                        </Paragraph>
+                      </Paragraphs>
+                      <Style/>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+              </TablixCells>
+            </TablixRow>
+            <TablixRow>
+              <Height>0.32in</Height>
+              <TablixCells>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="D_0">
+                      <CanGrow>true</CanGrow>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>=Fields!ItemCode.Value</Value>
+                              <Style>
+                                <FontSize>9pt</FontSize>
+                              </Style>
+                            </TextRun>
+                          </TextRuns>
+                          <Style/>
+                        </Paragraph>
+                      </Paragraphs>
+                      <Style/>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+                <TablixCell>
+                  <CellContents>
+                    <Textbox Name="D_1">
+                      <CanGrow>true</CanGrow>
+                      <Paragraphs>
+                        <Paragraph>
+                          <TextRuns>
+                            <TextRun>
+                              <Value>=Fields!ItemName.Value &amp; " – " &amp; Fields!ConditionAtDelivery.Value</Value>
+                              <Style>
+                                <FontSize>9pt</FontSize>
+                              </Style>
+                            </TextRun>
+                          </TextRuns>
+                          <Style/>
+                        </Paragraph>
+                      </Paragraphs>
+                      <Style/>
+                    </Textbox>
+                  </CellContents>
+                </TablixCell>
+              </TablixCells>
+            </TablixRow>
+          </TablixRows>
+        </TablixBody>
+        <TablixColumnHierarchy>
+          <TablixMembers>
+            <TablixMember/>
+            <TablixMember/>
+          </TablixMembers>
+        </TablixColumnHierarchy>
+        <TablixRowHierarchy>
+          <TablixMembers>
+            <TablixMember>
+              <Group>
+                <GroupExpressions/>
+              </Group>
+            </TablixMember>
+            <TablixMember/>
+          </TablixMembers>
+        </TablixRowHierarchy>
+        <DataSetName>IssueData</DataSetName>
+        <Top>2.13in</Top>
+        <Left>0.2in</Left>
+        <Height>0.67in</Height>
+        <Width>7.40in</Width>
+      </Tablix>
+      <Textbox Name="Signatures">
+        <CanGrow>true</CanGrow>
+        <Paragraphs>
+          <Paragraph>
+            <TextRuns>
+              <TextRun>
+                <Value>="Quan hệ/ủy quyền: " &amp; First(Fields!RecipientRelation.Value, "IssueData") &amp; "     NGƯỜI GIAO / NGƯỜI NHẬN"</Value>
+                <Style>
+                  <FontSize>9pt</FontSize>
+                  <Color>#172038</Color>
+                  <FontWeight>Bold</FontWeight>
+                </Style>
+              </TextRun>
+            </TextRuns>
+            <Style/>
+          </Paragraph>
+        </Paragraphs>
+        <Top>4.0in</Top>
+        <Left>0.2in</Left>
+        <Height>0.35in</Height>
+        <Width>7.2in</Width>
+        <Style/>
+      </Textbox>
+    </ReportItems>
+    <Height>6.2in</Height>
+    <Style/>
+  </Body>
+  <Width>7.6in</Width>
+  <Page>
+    <PageHeight>11.69in</PageHeight>
+    <PageWidth>8.27in</PageWidth>
+    <LeftMargin>0.3in</LeftMargin>
+    <RightMargin>0.3in</RightMargin>
+    <TopMargin>0.3in</TopMargin>
+    <BottomMargin>0.3in</BottomMargin>
+  </Page>
+</Report>

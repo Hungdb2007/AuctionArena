@@ -1,0 +1,34 @@
+﻿AUCTION ARENA - HƯỚNG DẪN SỬ DỤNG
+
+YÊU CẦU
+Windows 10/11, .NET Framework 4.8 và SQL Server đang hoạt động trên máy
+hoặc trong mạng nội bộ. Tài khoản cần có quyền truy cập cơ sở dữ liệu.
+
+KHỞI ĐỘNG
+1. Giải nén đầy đủ gói chạy vào một thư mục trên Windows.
+2. Chạy CHAY_AUCTION_ARENA.cmd.
+3. Nhập tên SQL Server, ví dụ .\SQLEXPRESS hoặc MAYCHU\SQLEXPRESS.
+4. Nếu chưa có AuctionArenaDB, công cụ khởi tạo bằng tài khoản Windows
+   có quyền tạo database. Nếu đã có, công cụ bổ sung cấu trúc thanh toán, xuất kho còn thiếu
+   và kiểm tra dữ liệu trước khi mở ứng dụng.
+5. Tạo tài khoản quản trị đầu tiên khi ứng dụng yêu cầu, sau đó đăng nhập.
+
+Với bộ cài AuctionArena_Setup.exe, chọn SQL Server trong quá trình cài đặt
+và mở Auction Arena từ Start Menu hoặc biểu tượng trên Desktop.
+
+CẤU HÌNH VÀ DỮ LIỆU
+- SQL Server được cài đặt riêng hoặc sử dụng máy chủ trong mạng nội bộ.
+- Dùng CAI_DATABASE.cmd để kiểm tra hoặc cấu hình kết nối Windows Authentication.
+- Với SQL Authentication, quản trị viên chuẩn bị cơ sở dữ liệu trước,
+  sau đó mở AuctionArena.WinForms.exe và cấu hình tài khoản SQL trong ứng dụng.
+- Ứng dụng tự bổ sung cấu trúc thanh toán, xuất kho còn thiếu khi khởi động.
+  Nếu tài khoản SQL thiếu quyền ALTER, quản trị viên chọn đúng database trong
+  SSMS và chạy SQL\04_DongBoThanhToanXuatKho.sql một lần, sau đó mở lại ứng dụng.
+- Với các phần cấu trúc khác còn thiếu, quản trị viên sao lưu dữ liệu, kiểm tra
+  đúng server và thực hiện SQL\02_DongBoCauTruc.sql.
+- Không chạy SQL\01_TaoDatabase.sql trên cơ sở dữ liệu đang có dữ liệu.
+- SQL\03_KiemTraDatabase.sql dùng để kiểm tra cấu trúc và đối soát chứng từ.
+
+KHI KHÔNG KHỞI ĐỘNG ĐƯỢC
+Kiểm tra .NET Framework, dịch vụ SQL Server, tên server và quyền truy cập.
+Nếu cài đặt có lỗi kết nối, xem CAI_DATABASE.log trong thư mục ứng dụng.

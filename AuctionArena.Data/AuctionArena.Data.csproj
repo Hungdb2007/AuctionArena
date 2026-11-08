@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D2A480AF-8140-458C-BA6C-41E4AB0F2167}</ProjectGuid>
+    <OutputType>Library</OutputType><RootNamespace>AuctionArena.Data</RootNamespace><AssemblyName>AuctionArena.Data</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion><FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "><DebugSymbols>true</DebugSymbols><OutputPath>bin\Debug\</OutputPath></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "><Optimize>true</Optimize><OutputPath>bin\Release\</OutputPath></PropertyGroup>
+  <ItemGroup><Reference Include="System" /><Reference Include="System.Core" /><Reference Include="System.ComponentModel.DataAnnotations" /><Reference Include="System.Data" /><Reference Include="System.Data.Entity" /><Reference Include="System.Security" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="AuctionArenaDbContext.cs" />
+    <Compile Include="DatabaseSchemaManager.cs" />
+    <Compile Include="Models\AuctionLotsEntity.cs" />
+    <Compile Include="Models\AuctionSessionsEntity.cs" />
+    <Compile Include="Models\AuditLogsEntity.cs" />
+    <Compile Include="Models\BidsEntity.cs" />
+    <Compile Include="Models\CategoriesEntity.cs" />
+    <Compile Include="Models\ConsignmentContractDetailsEntity.cs" />
+    <Compile Include="Models\ConsignmentContractsEntity.cs" />
+    <Compile Include="Models\ConsignorReturnsEntity.cs" />
+    <Compile Include="Models\InvoiceAdjustmentsEntity.cs" />
+    <Compile Include="Models\ConsignorsEntity.cs" />
+    <Compile Include="Models\CustomerViolationsEntity.cs" />
+    <Compile Include="Models\CustomerTierHistoryEntity.cs" />
+    <Compile Include="Models\CustomersEntity.cs" />
+    <Compile Include="Models\InvoiceDetailsEntity.cs" />
+    <Compile Include="Models\InvoicesEntity.cs" />
+    <Compile Include="Models\InvoiceReviewCasesEntity.cs" />
+    <Compile Include="Models\ItemImagesEntity.cs" />
+    <Compile Include="Models\ItemsEntity.cs" />
+    <Compile Include="Models\PaymentsEntity.cs" />
+    <Compile Include="Models\PermissionsEntity.cs" />
+    <Compile Include="Models\RegistrationsEntity.cs" />
+    <Compile Include="Models\DepositRefundObligationsEntity.cs" />
+    <Compile Include="Models\RolePermissionsEntity.cs" />
+    <Compile Include="Models\RolesEntity.cs" />
+    <Compile Include="Models\SellerPayoutsEntity.cs" />
+    <Compile Include="Models\SellerPayoutOrdersEntity.cs" />
+    <Compile Include="Models\StockIssueDetailsEntity.cs" />
+    <Compile Include="Models\StockIssuesEntity.cs" />
+    <Compile Include="Models\StockReceiptDetailsEntity.cs" />
+    <Compile Include="Models\StockReceiptsEntity.cs" />
+    <Compile Include="Models\SystemSettingsEntity.cs" />
+    <Compile Include="Models\UsersEntity.cs" />
+    <Compile Include="Repositories\EfRepository.cs" />
+    <Compile Include="Repositories\IRepository.cs" />
+    <Compile Include="Security\PasswordHasher.cs" />
+    
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.5.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\SQL\04_DongBoThanhToanXuatKho.sql">
+      <LogicalName>AuctionArena.Data.PaymentDeliverySchema.sql</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

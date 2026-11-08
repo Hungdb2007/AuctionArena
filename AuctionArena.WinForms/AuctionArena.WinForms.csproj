@@ -1,0 +1,193 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8C0A6340-F4D5-45CC-B2E8-62687C30D013}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>AuctionArena.WinForms</RootNamespace>
+    <AssemblyName>AuctionArena.WinForms</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <StartupObject>AuctionArena.WinForms.Program</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Compile Include="ServerConfigurationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ServerConfigurationForm.Designer.cs">
+      <DependentUpon>ServerConfigurationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DashboardChartsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SettlementDeskForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FinanceFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FinanceInvoicesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FinanceCreateInvoiceForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FinanceIssuesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FinancePayoutsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ReportForms.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ItemImagesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="FirstAdminForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FirstAdminForm.Designer.cs">
+      <DependentUpon>FirstAdminForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RolesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoginForm.Designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UsersForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExcelExporter.cs" />
+    <Compile Include="UiCommon.cs" />
+    <Compile Include="PasswordForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PasswordForm.Designer.cs">
+      <DependentUpon>PasswordForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CatalogFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CustomersForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ConsignorsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CategoriesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ItemsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ContractsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StockReceiptsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="WarehouseWorkflowForms.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionSessionsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionLotsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionRegistrationsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionRoomForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProjectorRoomForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BidHistoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuctionNavigationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.5.1" />
+    <PackageReference Include="Microsoft.ReportingServices.ReportViewerControl.Winforms" Version="150.1652.0" />
+    <PackageReference Include="Microsoft.SqlServer.Types" Version="14.0.314.76" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AuctionArena.Data\AuctionArena.Data.csproj">
+      <Project>{D2A480AF-8140-458C-BA6C-41E4AB0F2167}</Project>
+      <Name>AuctionArena.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AuctionArena.Services\AuctionArena.Services.csproj">
+      <Project>{BBAA5F40-376A-4B45-9D33-75313C527D12}</Project>
+      <Name>AuctionArena.Services</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ServerConfigurationForm.resx">
+      <DependentUpon>ServerConfigurationForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PasswordForm.resx">
+      <DependentUpon>PasswordForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FirstAdminForm.resx">
+      <DependentUpon>FirstAdminForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="App.config" />
+    <EmbeddedResource Include="Reports\Invoice.rdlc" />
+    <EmbeddedResource Include="Reports\StockIssue.rdlc" />
+    <EmbeddedResource Include="Reports\Revenue.rdlc" />
+    <EmbeddedResource Include="Reports\BusinessRevenue.rdlc" />
+    <EmbeddedResource Include="Reports\BusinessSession.rdlc" />
+    <EmbeddedResource Include="Reports\BusinessCategory.rdlc" />
+    <EmbeddedResource Include="Reports\BusinessDebt.rdlc" />
+    <EmbeddedResource Include="Reports\BusinessPayout.rdlc" />
+    <EmbeddedResource Include="Reports\Contract.rdlc" />
+    <EmbeddedResource Include="Reports\ItemLabel.rdlc" />
+    <EmbeddedResource Include="Reports\ConsignorReturn.rdlc" />
+    <EmbeddedResource Include="Reports\BidTranscript.rdlc" />
+    <EmbeddedResource Include="Reports\PaymentReceipt.rdlc" />
+    <EmbeddedResource Include="Reports\SellerPayoutReceipt.rdlc" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
