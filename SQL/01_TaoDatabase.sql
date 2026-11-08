@@ -2,7 +2,7 @@
 -- Nếu AuctionArenaDB đã có dữ liệu, không chạy lại file này.
 -- Chọn đúng SQL Server trước khi thực hiện trong SSMS.
 -- Đã tạo rồi thì không tạo lại chánh phát sinh lỗi.
-file01.....
+-- file01.....
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 SET ANSI_PADDING ON;
