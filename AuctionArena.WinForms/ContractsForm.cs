@@ -70,7 +70,7 @@ namespace AuctionArena.WinForms
             reload.Click+=(s, e) => Theme.Safe(LoadItems);
             Controls.Add(Theme.Label("Ghi chú hợp đồng", 20, 542, 300));
             Controls.Add(notes);
-            Controls.Add(Theme.Label("Phí bán thỏa thuận (%)", 557, 542, 210));
+            Controls.Add(Theme.Label("Phí bán thỏa thuận (%)", 557, 542, 170));
             Controls.Add(fee);
             Controls.Add(Theme.Label("Ngày hết hạn", 740, 542, 220));
             Controls.Add(expiry);
@@ -82,7 +82,7 @@ namespace AuctionArena.WinForms
             save.Enabled = flags.Create;
             Controls.Add(save);
             save.Click+=(s, e) => Theme.Safe(() => SaveContract());
-            var cancelContract = Theme.Button("Hủy hợp đồng trước nhập kho", 20, 710, 265);
+            var cancelContract = Theme.Button("Hủy hợp đồng trước nhập kho", 755, 699, 265);
             cancelContract.Enabled = flags.Edit;
             Controls.Add(cancelContract);
             cancelContract.Click+=(s, e) => Theme.Safe(CancelSelectedContract);

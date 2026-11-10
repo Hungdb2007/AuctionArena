@@ -93,7 +93,7 @@ namespace AuctionArena.WinForms
                 var first = Theme.Input(20, 450, 170);
                 first.Text = "1";
                 dlg.Controls.Add(first);
-                dlg.Controls.Add(Theme.Label("Giá và thời gian lấy từ Form lot chính.", 215, 420, 365));
+                dlg.Controls.Add(Theme.Label("Giá và thời gian lấy từ Form lot chính.", 255, 420, 340));
                 var apply = Theme.Button("Tạo các lot đã chọn", 20, 505, 245);
                 dlg.Controls.Add(apply);
 

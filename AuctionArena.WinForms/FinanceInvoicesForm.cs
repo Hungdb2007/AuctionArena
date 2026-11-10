@@ -19,17 +19,17 @@ namespace AuctionArena.WinForms
         };
         public FinanceInvoicesForm(int actor, PermissionFlags flags) : base("Hóa đơn và thanh toán", actor, flags)
         {
-            search = Theme.Input(170, 20, 260);
+            search = Theme.Input(170, 28, 260);
             Controls.Add(search);
             Controls.Add(Theme.Label("Tìm mã hoặc khách", 170, 0, 250));
             debt = new CheckBox
             {
-                Text = "Chỉ còn nợ", Left = 460, Top = 23, Width = 130, ForeColor = Theme.Text
+                Text = "Chỉ còn nợ", Left = 460, Top = 30, Width = 130, ForeColor = Theme.Text
             };
             Controls.Add(debt);
             statusFilter = new ComboBox
             {
-                Left = 610, Top = 20, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList
+                Left = 610, Top = 28, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList
             };
             statusFilter.Items.AddRange(new object[]
             {
@@ -39,15 +39,15 @@ namespace AuctionArena.WinForms
             Controls.Add(statusFilter);
             dateFrom = new DateTimePicker
             {
-                Left = 20, Top = 50, Width = 180, ShowCheckBox = true, Checked = false, Format = DateTimePickerFormat.Short
+                Left = 20, Top = 66, Width = 180, ShowCheckBox = true, Checked = false, Format = DateTimePickerFormat.Short
             };
             dateTo = new DateTimePicker
             {
-                Left = 220, Top = 50, Width = 180, ShowCheckBox = true, Checked = false, Format = DateTimePickerFormat.Short
+                Left = 220, Top = 66, Width = 180, ShowCheckBox = true, Checked = false, Format = DateTimePickerFormat.Short
             };
             Controls.Add(dateFrom);
             Controls.Add(dateTo);
-            var resetFilter = Theme.Button("Xóa lọc", 835, 17, 130);
+            var resetFilter = Theme.Button("Xóa lọc", 835, 22, 130);
             Controls.Add(resetFilter);
             resetFilter.Click+=(s, e) => 
             {
@@ -66,14 +66,14 @@ namespace AuctionArena.WinForms
             paymentWarning.Anchor = AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
             Controls.Add(paymentWarning);
             Grid.Top = 110;
-            Grid.Height = 245;
+            Grid.Height = 235;
             details = Theme.Grid(20, 385, 515, 130);
             history = Theme.Grid(550, 385, 530, 130);
             Controls.Add(details);
             Controls.Add(history);
             Grid.SelectionChanged+=(s, e) => ShowSelected();
-            Controls.Add(Theme.Label("Giá búa các lot", 20, 350, 300));
-            Controls.Add(Theme.Label("Các khoản thu / chuyển cọc", 550, 350, 300));
+            Controls.Add(Theme.Label("Giá búa các lot", 20, 352, 300));
+            Controls.Add(Theme.Label("Các khoản thu / chuyển cọc", 550, 352, 300));
             amount = Theme.Input(20, 565, 220);
             Controls.Add(Theme.Label("Số tiền thu", 20, 536, 200));
             Controls.Add(amount);

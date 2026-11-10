@@ -38,7 +38,7 @@ namespace AuctionArena.WinForms
             Text = "Đối soát kết quả đấu giá trực tiếp";
             Width = 1170;
             Height = 800;
-            MinimumSize = new Size(1040, 720);
+            MinimumSize = new Size(1170, 720);
             StartPosition = FormStartPosition.CenterParent;
             Theme.Apply(this);
             Controls.Add(Theme.Label("Phiên đã kết thúc", 20, 20, 350));
@@ -73,6 +73,7 @@ namespace AuctionArena.WinForms
                 LoadWinners();
             });
             Controls.Add(message);
+            message.Anchor = AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Bottom;
             message.Text = "Không tự động chuyển quyền mua hoặc điều chỉnh tiền cọc. " +
             "Ứng viên trả giá kế tiếp chỉ để quản lý kiểm tra.";
             sessions.SelectedIndexChanged+=(s, e) => 

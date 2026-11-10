@@ -57,7 +57,7 @@
 
             this.lblCu.Text = "Mật khẩu hiện tại";
             this.lblCu.Location = new System.Drawing.Point(25, 82);
-            this.lblCu.Size = new System.Drawing.Size(370, 27);
+            this.lblCu.Size = new System.Drawing.Size(330, 27);
             this.txtCu.Location = new System.Drawing.Point(25, 110);
             this.txtCu.Size = new System.Drawing.Size(330, 25);
             this.txtCu.UseSystemPasswordChar = true;
@@ -69,7 +69,7 @@
 
             this.lblMoi.Text = "Mật khẩu mới";
             this.lblMoi.Location = new System.Drawing.Point(25, 157);
-            this.lblMoi.Size = new System.Drawing.Size(370, 27);
+            this.lblMoi.Size = new System.Drawing.Size(330, 27);
             this.txtMoi.Location = new System.Drawing.Point(25, 185);
             this.txtMoi.Size = new System.Drawing.Size(330, 25);
             this.txtMoi.UseSystemPasswordChar = true;
@@ -82,7 +82,7 @@
 
             this.lblXacNhan.Text = "Nhập lại mật khẩu mới";
             this.lblXacNhan.Location = new System.Drawing.Point(25, 233);
-            this.lblXacNhan.Size = new System.Drawing.Size(370, 27);
+            this.lblXacNhan.Size = new System.Drawing.Size(330, 27);
             this.txtXacNhan.Location = new System.Drawing.Point(25, 261);
             this.txtXacNhan.Size = new System.Drawing.Size(330, 25);
             this.txtXacNhan.UseSystemPasswordChar = true;

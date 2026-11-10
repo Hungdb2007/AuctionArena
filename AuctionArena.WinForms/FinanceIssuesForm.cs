@@ -18,7 +18,7 @@ namespace AuctionArena.WinForms
             MinimumSize = new Size(1080, 900);
             AutoScroll = true;
             Grid.Height = 170;
-            Controls.Add(Theme.Label("Các phiếu xuất đã lập", 20, 64, 400));
+            Controls.Add(Theme.Label("Các phiếu xuất đã lập", 20, 60, 400));
             Controls.Add(Theme.Label("Hóa đơn đã thanh toán đủ, còn hiện vật chờ giao", 20, 282, 600));
             pending = Theme.Grid(20, 312, 1060, 135);
             Controls.Add(pending);

@@ -19,7 +19,7 @@ namespace AuctionArena.WinForms
             Height = 850;
             AutoScroll = true;
             Grid.Height = 210;
-            Controls.Add(Theme.Label("Các khoản đã chi trả", 20, 65, 350));
+            Controls.Add(Theme.Label("Các khoản đã chi trả", 20, 60, 350));
             Controls.Add(Theme.Label("Hình thức chi thực tế", 450, 657, 230));
             payoutMethod.Items.AddRange(new object[]
             {

@@ -64,7 +64,7 @@ namespace AuctionArena.WinForms
             this.flags = flags;
             Text = "Biên bản trả hiện vật không bán được";
             Width = 1060;
-            Height = 695;
+            Height = 720;
             StartPosition = FormStartPosition.CenterParent;
             Theme.Apply(this);
             Controls.Add(Theme.Label("Hiện vật đủ điều kiện trả chủ hàng", 20, 35, 500));

@@ -207,7 +207,7 @@ namespace AuctionArena.WinForms
             });
             MoveActions(1270);
             Height = 1440;
-            appraise = Theme.Button("Duyệt thẩm định", 800, 1270, 155);
+            appraise = Theme.Button("Duyệt thẩm định", 810, 1270, 155);
             Controls.Add(appraise);
             appraise.Enabled = flags.Edit;
             appraise.Click+=(s, e) => SetAppraisal("Approved");

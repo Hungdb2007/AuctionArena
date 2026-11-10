@@ -22,6 +22,7 @@ namespace AuctionArena.WinForms
         readonly CheckBox auto;
         public BidHistoryForm(int actor, PermissionFlags flags):base("Lịch sử trả giá – chỉ đọc", actor, flags)
         {
+            Height = 760;
             sessions = new ComboBox
             {
                 Left = 20, Top = 470, Width = 295, DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = "Name", ValueMember = "Id"
@@ -76,7 +77,7 @@ namespace AuctionArena.WinForms
                 autoRefresh.Stop();
                 autoRefresh.Dispose();
             };
-            summary = Theme.Label("Tổng lượt: 0", 250, 596, 430);
+            summary = Theme.Label("Tổng lượt: 0", 250, 596, 420);
             Controls.Add(summary);
             var report = Action("In biên bản lot", 680, 592, Flags.Print, () => 
             {
@@ -88,9 +89,9 @@ namespace AuctionArena.WinForms
                 ReportForm.OpenBidTranscript(this, Actor, id.Value);
             });
             report.Width = 205;
-            var graph = Action("Biểu đồ trả giá", 680, 635, Flags.View, ShowPriceChart);
+            var graph = Action("Biểu đồ trả giá", 680, 640, Flags.View, ShowPriceChart);
             graph.Width = 205;
-            var openCustomer = Action("Mở hồ sơ khách", 450, 635, Flags.View, () => 
+            var openCustomer = Action("Mở hồ sơ khách", 450, 640, Flags.View, () => 
             {
                 var row = Grid.CurrentRow == null?null:Grid.CurrentRow.DataBoundItem as BidHistoryRow;
                 if (row == null)

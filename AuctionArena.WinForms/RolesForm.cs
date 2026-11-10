@@ -27,7 +27,7 @@ namespace AuctionArena.WinForms
             Text = "Nhóm quyền và ma trận RBAC";
             Width = 1110;
             Height = 870;
-            MinimumSize = new System.Drawing.Size(1040, 810);
+            MinimumSize = new System.Drawing.Size(1100, 810);
             StartPosition = FormStartPosition.CenterParent;
             Theme.Apply(this);
             KeyPreview = true;

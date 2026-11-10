@@ -35,6 +35,7 @@ namespace AuctionArena.WinForms
             Theme.Apply(this);
             price = Theme.Label("Giá hiện tại", 25, 25, 940);
             price.Font = new Font("Segoe UI", 22, FontStyle.Bold);
+            price.Height = 50;
             leader = Theme.Label("Paddle đang dẫn đầu", 25, 100, 450);
             clock = Theme.Label("Thời gian", 520, 100, 450);
             status = Theme.Label("Trạng thái lot", 25, 135, 850);

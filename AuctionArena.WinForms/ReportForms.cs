@@ -209,10 +209,10 @@ namespace AuctionArena.WinForms
             Text = "Báo cáo kinh doanh – 5 loại";
             Width = 1200;
             Height = 830;
-            MinimumSize = new System.Drawing.Size(1050, 730);
+            MinimumSize = new System.Drawing.Size(1160, 730);
             StartPosition = FormStartPosition.CenterParent;
             Theme.Apply(this);
-            Controls.Add(Theme.Label("Kỳ từ ngày", 20, 20, 220));
+            Controls.Add(Theme.Label("Kỳ từ ngày", 20, 20, 200));
             Controls.Add(Theme.Label("Đến ngày", 235, 20, 210));
             from = new DateTimePicker
             {
@@ -292,7 +292,7 @@ namespace AuctionArena.WinForms
             Controls.Add(summary);
             explanation = new Label
             {
-                Left = 20, Top = 733, Width = 1130, Height = 35, ForeColor = Theme.Muted, 
+                Left = 20, Top = 733, Width = 1130, Height = 42, ForeColor = Theme.Muted, 
                 Anchor = AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Bottom, 
                 Text = "Doanh thu theo ngày tất toán; công nợ theo ngày phát hành; chi trả theo ngày thực chi. " +
                 "Tỉ lệ bán theo ngày kết thúc lot; công nợ lọc từng loại được phân bổ theo tỷ trọng giá búa."

@@ -45,11 +45,11 @@ namespace AuctionArena.WinForms
             Controls.Add(notes);
             Controls.Add(Theme.Label("Người giao hiện vật", 580, 349, 260));
             Controls.Add(deliveredBy);
-            var save = Theme.Button("Xác nhận nhập kho", 590, 375, 220);
+            var save = Theme.Button("Xác nhận nhập kho", 590, 410, 220);
             save.Enabled = flags.Create;
             Controls.Add(save);
             save.Click+=(s, e) => Theme.Safe(() => Confirm());
-            var refreshPending = Theme.Button("Tải lại hợp đồng", 820, 375, 170);
+            var refreshPending = Theme.Button("Tải lại hợp đồng", 820, 410, 170);
             Controls.Add(refreshPending);
             refreshPending.Click+=(s, e) => Theme.Safe(LoadContracts);
             Controls.Add(Theme.Label("Phiếu nhập kho đã lập", 18, 450, 370));

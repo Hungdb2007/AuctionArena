@@ -98,7 +98,7 @@ namespace AuctionArena.WinForms
             // Nút menu dùng màu nền sáng và chữ dễ đọc.
             int position = side.Controls.Count - 1;
             // Trừ dòng tiêu đề sidebar.
-            var button = Theme.Button(title, 12, 67 + position * 46, 232);
+            var button = Theme.Button(title, 12, 67 + position * 46, 226);
             button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             button.BackColor = Theme.Panel;
             button.ForeColor = Theme.Text;
@@ -115,7 +115,7 @@ namespace AuctionArena.WinForms
             var grants = account.Permissions(user.UserId);
             permissions = grants;
             side.Controls.Clear();
-            var title = Theme.Label("AUCTION ARENA", 16, 15, 230);
+            var title = Theme.Label("AUCTION ARENA", 16, 15, 224);
             title.Height = 42;
             title.Font = new Font("Segoe UI", 15, FontStyle.Bold);
             title.ForeColor = Theme.Primary;

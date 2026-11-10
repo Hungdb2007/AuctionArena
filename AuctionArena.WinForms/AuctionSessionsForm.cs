@@ -37,13 +37,13 @@ namespace AuctionArena.WinForms
             });
             Action("Duyệt lịch phiên", 800, 475, flags.Edit, () => Manager.ScheduleSession(Actor, SelectedId(Grid, "SessionId")));
             Action("Sửa phiên", 600, 530, flags.Edit, () => Manager.SaveSession(Actor, SelectedId(Grid, "SessionId"), code.Text, name.Text, starts.Value, ends.Value));
-            Action("Mở phiên", 800, 650, flags.Edit, () => Manager.OpenSession(Actor, SelectedId(Grid, "SessionId")));
+            Action("Mở phiên", 820, 640, flags.Edit, () => Manager.OpenSession(Actor, SelectedId(Grid, "SessionId")));
             Action("Kết thúc phiên", 800, 530, flags.Edit, () => 
             {
                 if (MessageBox.Show("Kết thúc phiên đã chọn?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 new SessionService().CloseSession(Actor, SelectedId(Grid, "SessionId"));
             });
-            var clone = Action("Nhân bản phiên nháp", 600, 690, flags.Create, () => 
+            var clone = Action("Nhân bản phiên nháp", 600, 640, flags.Create, () => 
             {
                 int id = SelectedId(Grid, "SessionId");
                 var newCode = code.Text.Trim()+"-COPY";

@@ -18,7 +18,7 @@ namespace AuctionArena.WinForms
         byte[] selectedPhoto;
         readonly PictureBox preview = new PictureBox
         {
-            Left = 740, Top = 600, Width = 190, Height = 125, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Theme.Panel
+            Left = 812, Top = 600, Width = 190, Height = 125, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Theme.Panel
         };
         public CustomersForm(int actor, PermissionFlags flags, string presetSearch = null):base("Khách hàng", actor, flags)
         {
@@ -40,7 +40,7 @@ namespace AuctionArena.WinForms
             Controls.Add(black);
             address = Field("Địa chỉ liên hệ", 18, 590, 620);
             photo = Field("Đường dẫn ảnh khách (tùy chọn)", 18, 674, 620);
-            var browse = Theme.Button("Chọn ảnh", 670, 700, 150);
+            var browse = Theme.Button("Chọn ảnh", 650, 700, 150);
             Controls.Add(browse);
             browse.Enabled = flags.Edit;
             browse.Click+=(s, e) => Theme.Safe(() => 

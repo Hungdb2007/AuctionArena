@@ -30,7 +30,7 @@ namespace AuctionArena.WinForms
             Text = "Tài khoản & Nhật ký";
             Width = 1100;
             Height = 835;
-            MinimumSize = new Size(1000, 730);
+            MinimumSize = new Size(1060, 730);
             StartPosition = FormStartPosition.CenterParent;
             Theme.Apply(this);
             KeyPreview = true;
@@ -78,7 +78,7 @@ namespace AuctionArena.WinForms
             phone = Make(users, "Số điện thoại", 840, 368, 180);
             role = new ComboBox
             {
-                Left = 20, Top = 473, Width = 270, DropDownStyle = ComboBoxStyle.DropDownList
+                Left = 20, Top = 475, Width = 270, DropDownStyle = ComboBoxStyle.DropDownList
             };
             users.Controls.Add(role);
             users.Controls.Add(Theme.Label("Nhóm quyền", 20, 447, 220));
@@ -270,16 +270,16 @@ namespace AuctionArena.WinForms
             {
                 if (e.RowIndex>=0)edit.PerformClick();
             };
-            history.Controls.Add(Theme.Label("Mã hành động", 20, 18));
+            history.Controls.Add(Theme.Label("Mã hành động", 20, 18, 240));
             action = Theme.Input(20, 47, 240);
             history.Controls.Add(action);
-            history.Controls.Add(Theme.Label("Từ ngày", 280, 18));
+            history.Controls.Add(Theme.Label("Từ ngày", 280, 18, 175));
             from = new DateTimePicker
             {
                 Left = 280, Top = 47, Width = 175, Value = DateTime.Today.AddMonths(-1)
             };
             history.Controls.Add(from);
-            history.Controls.Add(Theme.Label("Đến ngày", 470, 18));
+            history.Controls.Add(Theme.Label("Đến ngày", 470, 18, 175));
             to = new DateTimePicker
             {
                 Left = 470, Top = 47, Width = 175
