@@ -33,8 +33,7 @@ function Check-RequiredSchema([string]$serverConnectionString) {
         throw 'Thieu SQL\SchemaColumns.tsv trong goi cai dat.'
     }
 
-    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
-    $builder.ConnectionString = $serverConnectionString
+    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder -ArgumentList $serverConnectionString
     $builder['Initial Catalog'] = 'AuctionArenaDB'
     $connection = New-Object System.Data.SqlClient.SqlConnection($builder.ConnectionString)
     $actual = @{}
@@ -83,8 +82,7 @@ function Sync-PaymentAndDeliverySchema([string]$serverConnectionString) {
     if (-not (Test-Path -LiteralPath $scriptPath)) {
         throw 'Thieu SQL\04_DongBoThanhToanXuatKho.sql trong goi cai dat.'
     }
-    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
-    $builder.ConnectionString = $serverConnectionString
+    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder -ArgumentList $serverConnectionString
     $builder['Initial Catalog'] = 'AuctionArenaDB'
     $schemaConnection = New-Object System.Data.SqlClient.SqlConnection($builder.ConnectionString)
     try {
