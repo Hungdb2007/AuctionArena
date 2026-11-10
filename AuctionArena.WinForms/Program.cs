@@ -53,11 +53,10 @@ namespace AuctionArena.WinForms
                     Application.Restart();
                     return;
                 }
-                // Chuẩn bị các cột thanh toán, xuất kho rồi kiểm tra trước khi mở Form.
+                // Kiểm tra cấu trúc database trước khi mở Form.
+                // Bộ cài (CAI_DATABASE.ps1) chịu trách nhiệm tạo/bổ sung cấu trúc; ứng dụng chỉ đọc và báo thiếu.
                 try
                 {
-                    var entry = System.Configuration.ConfigurationManager.ConnectionStrings["AuctionArenaDB"];
-                    DatabaseSchemaManager.EnsurePaymentAndDeliverySchema(entry.ConnectionString);
                     new SchemaReadinessService().Verify();
                 }
                 catch (Exception ex)

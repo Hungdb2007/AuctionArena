@@ -21,9 +21,10 @@ CẤU HÌNH VÀ DỮ LIỆU
 - Dùng CAI_DATABASE.cmd để kiểm tra hoặc cấu hình kết nối Windows Authentication.
 - Với SQL Authentication, quản trị viên chuẩn bị cơ sở dữ liệu trước,
   sau đó mở AuctionArena.WinForms.exe và cấu hình tài khoản SQL trong ứng dụng.
-- Ứng dụng tự bổ sung cấu trúc thanh toán, xuất kho còn thiếu khi khởi động.
-  Nếu tài khoản SQL thiếu quyền ALTER, quản trị viên chọn đúng database trong
-  SSMS và chạy SQL\04_DongBoThanhToanXuatKho.sql một lần, sau đó mở lại ứng dụng.
+- CAI_DATABASE.cmd tự bổ sung cấu trúc thanh toán, xuất kho còn thiếu.
+  Nếu ứng dụng báo thiếu cấu trúc, quản trị viên chạy lại CAI_DATABASE.cmd hoặc
+  chọn đúng database trong SSMS và chạy SQL\04_DongBoThanhToanXuatKho.sql một lần,
+  sau đó mở lại ứng dụng.
 - Với các phần cấu trúc khác còn thiếu, quản trị viên sao lưu dữ liệu, kiểm tra
   đúng server và thực hiện SQL\02_DongBoCauTruc.sql.
 - Không chạy SQL\01_TaoDatabase.sql trên cơ sở dữ liệu đang có dữ liệu.

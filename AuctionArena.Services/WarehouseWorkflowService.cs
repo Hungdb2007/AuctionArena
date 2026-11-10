@@ -212,24 +212,17 @@ namespace AuctionArena.Services
             {
                 using (var db = new AuctionArenaDbContext())
                 {
-                    var columns = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
                     var connection = db.Database.Connection;
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.CommandText = 
-                        "SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = N'dbo'";
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var table = reader.GetString(0);
-                                if (!columns.ContainsKey(table))
-                                columns.Add(table, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-                                columns[table].Add(reader.GetString(1));
-                            }
-                        }
-                    }
+                    // Đọc danh sách cột thực tế bằng LINQ, nhóm theo tên bảng.
+                    var columns = db.SchemaColumns
+                    .Where(c => c.TableSchema == "dbo")
+                    .Select(c => new { c.TableName, c.ColumnName })
+                    .ToList()
+                    .GroupBy(c => c.TableName, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => new HashSet<string>(g.Select(c => c.ColumnName), StringComparer.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase);
                     var missingBase = Missing(columns, coreColumns);
                     if (missingBase.Count > 0)
                     throw new BusinessException("Cơ sở dữ liệu đang kết nối thiếu cấu trúc bắt buộc của Auction Arena. " +

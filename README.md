@@ -16,9 +16,9 @@ Kịch bản và công cụ kiểm thử nghiệp vụ nằm trong thư mục `K
 
 1. Giải nén toàn bộ gói vào một thư mục mới trên Windows.
 2. Nhấp đúp `CHAY_AUCTION_ARENA.cmd` ở thư mục ngoài cùng.
-3. Chọn đúng SQL Server đang lưu dữ liệu của bạn. Ứng dụng chuẩn bị cấu trúc thanh toán, xuất kho còn thiếu trước khi đăng nhập.
+3. Chọn đúng SQL Server đang lưu dữ liệu của bạn. Công cụ cài đặt chuẩn bị cấu trúc thanh toán, xuất kho còn thiếu; ứng dụng kiểm tra cấu trúc trước khi đăng nhập.
 
-Gói có sẵn EXE Release và thư viện tại `DONG_GOI\BAN_CHAY_LOCAL\AuctionArena`. Chạy ứng dụng không cần Visual Studio; máy cần .NET Framework 4.8 và quyền kết nối SQL Server. Nếu thiếu quyền sửa cấu trúc lần đầu, quản trị viên chạy tệp `SQL\04_DongBoThanhToanXuatKho.sql` trên đúng database rồi mở lại ứng dụng.
+Gói có sẵn EXE Release và thư viện tại `DONG_GOI\BAN_CHAY_LOCAL\AuctionArena`. Chạy ứng dụng không cần Visual Studio; máy cần .NET Framework 4.8 và quyền kết nối SQL Server. Nếu ứng dụng báo thiếu cấu trúc thanh toán, xuất kho, quản trị viên chạy tệp `SQL\04_DongBoThanhToanXuatKho.sql` trên đúng database rồi mở lại ứng dụng.
 
 ## Chạy từ mã nguồn
 
@@ -50,10 +50,10 @@ Tạo lại bộ cài cần thêm NSIS 3 Unicode. Các tệp kết quả nằm c
 | `SQL\01_TaoDatabase.sql` | Khởi tạo `AuctionArenaDB` khi cài đặt mới. |
 | `SQL\02_DongBoCauTruc.sql` | Bổ sung bảng, cột và ràng buộc cần thiết cho cơ sở dữ liệu đang sử dụng. |
 | `SQL\03_KiemTraDatabase.sql` | Kiểm tra kết nối, cấu trúc và đối soát dữ liệu chứng từ. |
-| `SQL\04_DongBoThanhToanXuatKho.sql` | Đồng bộ cấu trúc thanh toán và xuất kho; ứng dụng tự thực hiện khi khởi động. |
+| `SQL\04_DongBoThanhToanXuatKho.sql` | Đồng bộ cấu trúc thanh toán và xuất kho; công cụ cài đặt database tự thực hiện. |
 | `SQL\SchemaColumns.tsv` | Danh sách cột để công cụ cài đặt kiểm tra cấu trúc. |
 
-Sao lưu và chọn đúng SQL Server trước khi chạy tệp đồng bộ cấu trúc. Không dùng tệp khởi tạo để xử lý cơ sở dữ liệu đang có dữ liệu. Khi khởi động, ứng dụng bổ sung các cột thanh toán, xuất kho còn thiếu và các ràng buộc liên quan trong cùng một giao dịch. Các giá trị chứng từ hiện có được giữ nguyên. Nếu thiếu quyền ALTER, quản trị viên chạy `SQL\04_DongBoThanhToanXuatKho.sql` một lần trên đúng cơ sở dữ liệu. Khi cấu trúc đã đủ, tài khoản sử dụng thông thường không cần quyền ALTER.
+Sao lưu và chọn đúng SQL Server trước khi chạy tệp đồng bộ cấu trúc. Không dùng tệp khởi tạo để xử lý cơ sở dữ liệu đang có dữ liệu. Công cụ cài đặt database (`CAI_DATABASE.cmd`, bộ cài Setup) bổ sung các cột thanh toán, xuất kho còn thiếu và các ràng buộc liên quan trong cùng một giao dịch. Các giá trị chứng từ hiện có được giữ nguyên. Ứng dụng không sửa cấu trúc database: khi khởi động, ứng dụng chỉ đọc danh sách cột bằng Entity Framework/LINQ và báo bảng hoặc cột còn thiếu. Khi đó quản trị viên chạy `CAI_DATABASE.cmd` hoặc `SQL\04_DongBoThanhToanXuatKho.sql` một lần trên đúng cơ sở dữ liệu. Tài khoản sử dụng thông thường không cần quyền ALTER.
 
 Công cụ khởi tạo tự động dùng Windows Authentication. Nếu sử dụng SQL Authentication, quản trị viên chuẩn bị cơ sở dữ liệu trước, sau đó mở `AuctionArena.WinForms.exe` và nhập thông tin đăng nhập SQL ở màn hình cấu hình kết nối.
 

@@ -48,6 +48,8 @@ namespace AuctionArena.Data
         public DbSet<CustomerViolationEntity> CustomerViolations { get; set; }
         public DbSet<SystemSettingEntity> SystemSettings { get; set; }
         public DbSet<AuditLogEntity> AuditLogs { get; set; }
+        // Chỉ đọc: danh sách cột thực tế trong database (INFORMATION_SCHEMA.COLUMNS).
+        public DbSet<SchemaColumnEntity> SchemaColumns { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
