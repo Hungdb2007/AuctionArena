@@ -54,12 +54,47 @@ public static class ServiceChecks
                 Assert(!PasswordHasher.Verify("WrongAa123!", salt, hash, 150000), "Wrong password accepted.");
                 Assert(PasswordHasher.Hash("TestOnlyAa123!", PasswordHasher.CreateSalt()) != hash, "Salt not applied.");
             });
+            Test("appraisal_price_formats", delegate {
+                var previous = System.Globalization.CultureInfo.CurrentCulture;
+                try {
+                    foreach (string culture in new[] { "vi-VN", "en-US", "fr-FR", "de-DE" }) {
+                        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+                        foreach (string text in new[] { "15000000", "15.000.000", "15,000,000", "15 000 000" })
+                            Assert(AppraisalPriceInput.Parse(text) == 15000000m, "Wrong appraisal amount: " + text);
+                        foreach (string text in new[] { "", "0", "-100", "1.23.456", "abc", "100000000000000000" })
+                            Denied(delegate { AppraisalPriceInput.Parse(text); });
+                    }
+                } finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
+            });
             Test("initial_admin_and_login", delegate {
                 new InitialAdminService(Db).Create("test_admin", "Test Administrator", "TestOnlyAa123!");
                 actor = new AccountService(Db).Login("test_admin", "TestOnlyAa123!").UserId;
                 Denied(delegate { new InitialAdminService(Db).Create("other_admin", "Other Admin", "TestOnlyAa123!"); });
             });
             Seed();
+            Test("item_appraisal_persists_price_and_audit", delegate {
+                int categoryId, ownerId;
+                using (var db = Db()) { categoryId = db.Categories.First().CategoryId; ownerId = db.Consignors.First().ConsignorId; }
+                var catalog = new CatalogService(Db);
+                foreach (string state in new[] { "PendingAppraisal", "NeedInfo", "Rejected" }) {
+                    string code = "APPRAISE_" + state;
+                    catalog.SaveItem(actor, new ItemEntity { ItemCode = code, ItemName = "Appraisal test", CategoryId = categoryId,
+                        ConsignorId = ownerId, EstimatePrice = 1000000m });
+                    int itemId;
+                    using (var db = Db()) { var item = db.Items.Single(x => x.ItemCode == code); itemId = item.ItemId; item.ItemStatus = state; db.SaveChanges(); }
+                    Denied(delegate { catalog.Appraise(restricted, itemId, 15000000m, "Approved", ""); });
+                    Denied(delegate { catalog.Appraise(actor, itemId, 0m, "Approved", ""); });
+                    catalog.Appraise(actor, itemId, AppraisalPriceInput.Parse("15.000.000"), "Approved", "Test appraisal");
+                    using (var db = Db()) {
+                        var item = db.Items.Single(x => x.ItemId == itemId);
+                        Assert(item.ItemStatus == "Approved" && item.AppraisedPrice == 15000000m && item.AppraisedByUserId == actor && item.AppraisedAt.HasValue, "Appraisal not persisted.");
+                        string entityId = itemId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        Assert(db.AuditLogs.Count(x => x.ActionCode == "ITEM_APPRAISE" && x.EntityId == entityId) == 1, "Appraisal audit missing or duplicated.");
+                    }
+                    Denied(delegate { catalog.Appraise(actor, itemId, 20000000m, "Approved", ""); });
+                }
+                Denied(delegate { catalog.Appraise(actor, firstItem, 15000000m, "Approved", ""); });
+            });
             Test("rbac_blocks_service_write", delegate {
                 Denied(delegate { new AuctionService(Db).Bid(restricted, openLot, customer, 1000m); });
                 using (var db = Db()) Assert(!db.Bids.Any(), "Unauthorized bid persisted.");
@@ -130,7 +165,7 @@ public static class ServiceChecks
                 Denied(delegate { new SettlementService(Db).IssueItems(actor, invoiceId, "Test Recipient", lines, "123456789012", "Nguoi trung", "AtVenue"); });
                 using (var db = Db()) Assert(db.StockIssues.Count() == 1 && db.StockIssueDetails.Count() == 1, "Duplicate issue persisted.");
             });
-            Console.WriteLine("RESULT: " + passed + "/10 passed");
+            Console.WriteLine("RESULT: " + passed + "/12 passed");
             return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine("FAIL after " + passed + " checks: " + ex); return 1; }

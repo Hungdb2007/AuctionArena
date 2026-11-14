@@ -29,7 +29,7 @@ Lưu ý tình huống 06 chủ động gây lỗi SQL, không mô phỏng mất 
 ## Phạm vi xác minh của gói phát hành
 
 - Ba project .NET Framework 4.8 được biên dịch Release, không có lỗi hoặc cảnh báo.
-- 10/10 kiểm thử nghiệp vụ ở bảng trên đạt trên SQL Server 2022. Mã nguồn Data/Services được biên dịch với EF 6.5.1 trong bộ chạy .NET 8 trên Linux để thực thi kiểm thử; đây không phải kiểm thử giao diện Windows. Bộ kiểm thử gửi kèm sử dụng DLL .NET Framework 4.8 trên Windows.
+- 12/12 kiểm thử nghiệp vụ (10 tình huống ở bảng trên và 2 kiểm thử thẩm định) đạt trên SQL Server 2022. Mã nguồn Data/Services được biên dịch với EF 6.5.1 trong bộ chạy .NET 8 trên Linux để thực thi kiểm thử; đây không phải kiểm thử giao diện Windows. Bộ kiểm thử gửi kèm sử dụng DLL .NET Framework 4.8 trên Windows.
 - 8/8 kiểm thử cấu trúc SQL trước đó đạt: bổ sung đủ chín cột và giữ dữ liệu; đồng bộ khi đã có một phần cấu trúc; rollback khi trùng tham chiếu; từ chối khi thiếu quyền; phát hiện sai kiểu cột; từ chối database không tương thích; bốn lần khởi động đồng thời; tạo database mới và kiểm tra các tệp SQL.
 - Bộ cài NSIS được biên dịch và kiểm tra các tệp bên trong so với bản Release.
 
@@ -52,3 +52,10 @@ Các mục dưới đây là kịch bản nghiệm thu, chưa được đánh d�
 ## Đối chiếu yêu cầu phần mềm
 
 Ứng dụng có 30 Form cụ thể, đủ năm Form khung; CRUD và nghiệp vụ sử dụng Entity Framework/LINQ; phân quyền theo nhóm và thao tác; mật khẩu PBKDF2-HMAC-SHA256; giao dịch nhiều bước; 14 mẫu RDLC và lọc ngày. Phần cấu hình/đồng bộ cấu trúc database sử dụng SQL quản trị; không dùng các câu lệnh SQL dạng chuỗi để thay thế CRUD nghiệp vụ. Những tệp SQL này phục vụ cài đặt và kiểm tra cấu trúc.
+
+## Kiểm thử thẩm định hiện vật
+
+- `appraisal_price_formats`: nhập giá theo bốn thiết lập vùng Windows; kiểm tra số liền, dấu chấm/dấu phẩy/ngăn cách hàng nghìn và từ chối số không hợp lệ.
+- `item_appraisal_persists_price_and_audit`: duyệt từ PendingAppraisal, NeedInfo và Rejected; kiểm tra giá, người duyệt, thời điểm, nhật ký; chặn thiếu quyền, giá 0, duyệt lặp và hiện vật đã sang nghiệp vụ khác.
+
+Cách dùng màn Hiện vật: lưu hồ sơ trước, chọn hiện vật đang chờ thẩm định, nhập giá và bấm Duyệt thẩm định trực tiếp. Giá thẩm định không lưu bằng nút Lưu thông tin. Khi đang sửa hồ sơ, cần Lưu thông tin hoặc Hủy sửa trước khi nhập giá.

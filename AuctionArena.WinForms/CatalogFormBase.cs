@@ -295,6 +295,11 @@ namespace AuctionArena.WinForms
             DeleteButton.Enabled = !editing && Current != null && Flags.Delete;
             editButton.Enabled = !editing && Current != null && Flags.Edit;
             cancelButton.Enabled = editing;
+            OnModeChanged(editing);
+        }
+        // Form con cập nhật các thao tác nghiệp vụ không lưu bằng nút Lưu thông tin.
+        protected virtual void OnModeChanged(bool isEditing)
+        {
         }
         protected void RegisterEditor(Control c, string name = "")
         {

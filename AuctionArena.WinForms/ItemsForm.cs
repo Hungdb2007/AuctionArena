@@ -12,7 +12,8 @@ namespace AuctionArena.WinForms
         readonly CatalogService service = new CatalogService();
         readonly TextBox code, name, price, highPrice, appraisal, description, origin, condition, location, era, dimensions, material, appraisalNotes;
         readonly ComboBox category, owner, statusFilter, categoryFilter, ownerFilter;
-        readonly Button appraise;
+        readonly Button appraise, reject, needs, notesEntry;
+        readonly Label appraisalHint;
         decimal? minFilter, maxFilter;
         int? presetCategory;
         public ItemsForm(int actor, PermissionFlags flags, int? selectedCategory = null):base("Hiện vật và thẩm định", actor, flags)
@@ -64,6 +65,10 @@ namespace AuctionArena.WinForms
             category = Combo("Loại hiện vật", 18, 492);
             owner = Combo("Chủ hàng", 230, 492, 350);
             appraisal = Field("Giá thẩm định", 602, 492);
+            ReadOnlyAlways(appraisal);
+            appraisalHint = Theme.Label("Chọn hiện vật đã lưu để thẩm định.", 810, 510, 205);
+            appraisalHint.Height = 55;
+            Controls.Add(appraisalHint);
             description = Field("Mô tả", 18, 570, 440);
             origin = Field("Nguồn gốc", 18, 660, 440);
             condition = Field("Tình trạng bảo quản", 18, 744, 500);
@@ -75,7 +80,7 @@ namespace AuctionArena.WinForms
             highPrice = Field("Giá ước tính cao", 18, 1008, 205);
             appraisalNotes = Field("Ghi chú / lý do thẩm định", 245, 1008, 590);
             ReadOnlyAlways(appraisalNotes);
-            var notesEntry = Theme.Button("Nhập lý do", 850, 1032, 135);
+            notesEntry = Theme.Button("Nhập lý do", 850, 1032, 135);
             Controls.Add(notesEntry);
             notesEntry.Click+=(s, e) => Theme.Safe(() => 
             {
@@ -186,11 +191,11 @@ namespace AuctionArena.WinForms
                     dialog.Controls.Add(data); dialog.ShowDialog(this);
                 }
             });
-            var reject = Theme.Button("Từ chối", 440, 1190, 150);
+            reject = Theme.Button("Từ chối", 440, 1190, 150);
             reject.Enabled = flags.Edit;
             Controls.Add(reject);
             reject.Click+=(s, e) => SetAppraisal("Rejected");
-            var needs = Theme.Button("Yêu cầu bổ sung", 605, 1190, 195);
+            needs = Theme.Button("Yêu cầu bổ sung", 605, 1190, 195);
             needs.Enabled = flags.Edit;
             Controls.Add(needs);
             needs.Click+=(s, e) => SetAppraisal("NeedInfo");
@@ -277,9 +282,29 @@ namespace AuctionArena.WinForms
                 {
                     throw new BusinessException("Chọn hiện vật để thẩm định.");
                 }
-                decimal? value = decision == "Approved"?(decimal?)Money(appraisal):null;
-                service.Appraise(Actor, Current.ItemId, value, decision, appraisalNotes.Text); ReloadCommitted();
+                decimal? value = decision == "Approved"?(decimal?)AppraisalPriceInput.Parse(appraisal.Text):null;
+                service.Appraise(Actor, Current.ItemId, value, decision, appraisalNotes.Text);
+                ReloadCommitted();
+                MessageBox.Show(decision == "Approved"?"Đã duyệt thẩm định thành công.":"Đã lưu kết quả thẩm định.", "Auction Arena");
             });
+        }
+        protected override void OnModeChanged(bool isEditing)
+        {
+            // Hàm có thể được gọi từ hàm tạo lớp cha khi control chưa được dựng.
+            if (appraisal == null || appraise == null) return;
+            bool pending = Current != null && (Current.ItemStatus == "PendingAppraisal" ||
+                Current.ItemStatus == "NeedInfo" || Current.ItemStatus == "Rejected");
+            bool allowed = !isEditing && pending && Flags.Edit;
+            appraisal.ReadOnly = !allowed;
+            appraise.Enabled = allowed;
+            reject.Enabled = allowed;
+            needs.Enabled = allowed;
+            notesEntry.Enabled = allowed;
+            appraisalHint.Text = isEditing?"Lưu hoặc hủy sửa hồ sơ trước khi thẩm định.":
+                Current == null?"Lưu và chọn hiện vật trước khi thẩm định.":
+                !Flags.Edit?"Tài khoản chưa có quyền thẩm định.":
+                !pending?"Hiện vật đã duyệt hoặc đã chuyển sang nghiệp vụ khác.":
+                "Nhập giá rồi bấm Duyệt thẩm định. VD: 15.000.000";
         }
         protected override object Fetch(string q)
         {
