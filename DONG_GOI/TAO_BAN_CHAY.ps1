@@ -66,7 +66,7 @@ try {
     $connection = $runtimeConfig.SelectSingleNode('/configuration/connectionStrings/add[@name="AuctionArenaDB"]')
     if (-not $setting -or -not $connection) { throw 'Thieu ConnectionConfigured hoac AuctionArenaDB trong App.config.' }
     $setting.SetAttribute('value', 'false')
-    $connection.SetAttribute('connectionString', 'Data Source=.;Initial Catalog=AuctionArenaDB;Connect Timeout=4;TrustServerCertificate=True;Integrated Security=True;MultipleActiveResultSets=True;App=AuctionArena')
+    $connection.SetAttribute('connectionString', 'Data Source=.;Initial Catalog=AuctionArenaDB;Connect Timeout=15;TrustServerCertificate=True;Integrated Security=True;MultipleActiveResultSets=True;App=AuctionArena')
     $runtimeConfig.Save($runtimeConfigPath)
 
     # Bo cai cung lay ban Release da xoa ket noi cua may phat trien.

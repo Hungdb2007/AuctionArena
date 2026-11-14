@@ -91,7 +91,7 @@ namespace AuctionArena.WinForms
                 IntegratedSecurity = integrated.Checked, 
                 MultipleActiveResultSets = true, 
                 ApplicationName = "AuctionArena", 
-                ConnectTimeout = 4
+                ConnectTimeout = 15
             };
             if (!integrated.Checked)
             {

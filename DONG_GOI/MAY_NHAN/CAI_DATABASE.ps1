@@ -121,7 +121,7 @@ function Save-AppConnection([string]$serverName) {
     $builder['Integrated Security'] = $true
     $builder['MultipleActiveResultSets'] = $true
     $builder['TrustServerCertificate'] = $true
-    $builder['Connect Timeout'] = 8
+    $builder['Connect Timeout'] = 15
     $builder['Application Name'] = 'AuctionArena'
     $cs.SetAttribute('connectionString', $builder.ConnectionString)
     $cs.SetAttribute('providerName', 'System.Data.SqlClient')
@@ -156,7 +156,7 @@ try {
     $master['Data Source'] = $Server
     $master['Initial Catalog'] = 'master'
     $master['TrustServerCertificate'] = $true
-    $master['Connect Timeout'] = 10
+    $master['Connect Timeout'] = 15
     $master['Application Name'] = 'AuctionArena.DatabaseSetup'
 
     $useWindows = $true
