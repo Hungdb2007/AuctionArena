@@ -13,7 +13,7 @@ namespace AuctionArena.WinForms
         {
             InitializeComponent();
             Theme.Apply(this);
-            btnSave.BackColor = Theme.Primary;
+            btnSave.BackColor = Theme.Success;
             btnSave.ForeColor = System.Drawing.Color.White;
             LoadCurrentConnection();
             UpdateAuthenticationFields();

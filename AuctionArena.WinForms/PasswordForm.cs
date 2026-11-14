@@ -15,7 +15,7 @@ namespace AuctionArena.WinForms
         {
             InitializeComponent();
             Theme.Apply(this);
-            btnLuu.BackColor = Theme.Primary;
+            btnLuu.BackColor = Theme.Success;
             btnLuu.ForeColor = Color.White;
             txtCu.TextChanged += (sender, e) => errors.SetError(txtCu, "");
             txtXacNhan.TextChanged += (sender, e) => errors.SetError(txtXacNhan, "");

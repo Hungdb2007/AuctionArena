@@ -9,7 +9,18 @@ namespace AuctionArena.WinForms
     {
         public static readonly Color Bg = Color.FromArgb(244, 247, 251);
         public static readonly Color Panel = Color.White;
-        public static readonly Color Primary = Color.FromArgb(34, 95, 156);
+        // Màu nút theo thao tác: xanh dương (mặc định/Sửa), xanh lá (Thêm/Lưu/Tạo), đỏ (Xóa/Hủy/Khóa).
+        public static readonly Color Primary = Color.FromArgb(25, 118, 210);
+        public static readonly Color PrimaryHover = Color.FromArgb(21, 101, 192);
+        public static readonly Color Success = Color.FromArgb(46, 125, 50);
+        public static readonly Color SuccessHover = Color.FromArgb(56, 142, 60);
+        public static readonly Color Danger = Color.FromArgb(198, 40, 40);
+        public static readonly Color DangerHover = Color.FromArgb(211, 47, 47);
+        // Dòng tiêu đề của bảng.
+        public static readonly Color HeaderBg = Color.FromArgb(25, 118, 210);
+        public static readonly Color HeaderText = Color.White;
+        public static readonly Color DisabledBg = Color.FromArgb(225, 229, 235);
+        public static readonly Color DisabledBorder = Color.FromArgb(200, 206, 214);
         public static readonly Color Accent = Primary;
         public static readonly Color Text = Color.FromArgb(31, 41, 55);
         public static readonly Color Muted = Color.FromArgb(95, 109, 127);
@@ -52,21 +63,52 @@ namespace AuctionArena.WinForms
         }
         public static Button Button(string caption, int x, int y, int width = 160)
         {
+            Color back, hover;
+            ButtonColors(caption, out back, out hover);
             var button = new Button
             {
-                Text = caption, 
-                Left = x, 
-                Top = y, 
-                Width = width, 
-                Height = 38, 
-                BackColor = Primary, 
-                ForeColor = Color.White, 
-                FlatStyle = FlatStyle.Flat, 
+                Text = caption,
+                Left = x,
+                Top = y,
+                Width = width,
+                Height = 38,
+                BackColor = back,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            button.FlatAppearance.BorderColor = Primary;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(49, 113, 175);
+            button.FlatAppearance.BorderColor = back;
+            button.FlatAppearance.MouseOverBackColor = hover;
+            // Nút bị khóa: Windows vẽ chữ xám đậm, nên đổi nền sang xám nhạt cho dễ đọc và dễ nhận biết.
+            button.EnabledChanged += (s, e) =>
+            {
+                button.BackColor = button.Enabled ? back : DisabledBg;
+                button.FlatAppearance.BorderColor = button.Enabled ? back : DisabledBorder;
+            };
             return button;
+        }
+        // Chọn màu nút theo chữ trên nút: Thêm/Lưu/Tạo = xanh lá, Xóa/Hủy/Khóa = đỏ, còn lại = xanh dương.
+        static void ButtonColors(string caption, out Color back, out Color hover)
+        {
+            string text = (caption ?? "").Trim().ToLowerInvariant();
+            bool clearFilter = text.StartsWith("xóa lọc") || text.StartsWith("xóa bộ lọc");
+            if (!clearFilter && (text.StartsWith("xóa") || text.StartsWith("hủy") ||
+                text.StartsWith("khóa") || text.StartsWith("từ chối") || text.StartsWith("bỏ cọc")))
+            {
+                back = Danger;
+                hover = DangerHover;
+            }
+            else if (text.StartsWith("thêm") || text.StartsWith("lưu") || text.StartsWith("tạo") ||
+                text.StartsWith("lập") || text.StartsWith("nhóm mới") || text.StartsWith("ký"))
+            {
+                back = Success;
+                hover = SuccessHover;
+            }
+            else
+            {
+                back = Primary;
+                hover = PrimaryHover;
+            }
         }
         // Bảng chỉ dùng để chọn dòng; việc sửa dữ liệu thực hiện qua các nút của Form.
         public static DataGridView Grid(int x, int y, int width, int height)
@@ -113,10 +155,10 @@ namespace AuctionArena.WinForms
             grid.AlternatingRowsDefaultCellStyle.ForeColor = Text;
             grid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(231, 238, 247), 
-                ForeColor = Text, 
-                SelectionBackColor = Color.FromArgb(231, 238, 247), 
-                SelectionForeColor = Text, 
+                BackColor = HeaderBg,
+                ForeColor = HeaderText,
+                SelectionBackColor = HeaderBg,
+                SelectionForeColor = HeaderText,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold), 
                 Alignment = DataGridViewContentAlignment.MiddleLeft, 
                 Padding = new Padding(5, 0, 5, 0)
@@ -148,10 +190,10 @@ namespace AuctionArena.WinForms
             column.DefaultCellStyle.ForeColor = Text;
             column.DefaultCellStyle.SelectionBackColor = Selected;
             column.DefaultCellStyle.SelectionForeColor = Text;
-            column.HeaderCell.Style.BackColor = Color.FromArgb(231, 238, 247);
-            column.HeaderCell.Style.ForeColor = Text;
-            column.HeaderCell.Style.SelectionBackColor = Color.FromArgb(231, 238, 247);
-            column.HeaderCell.Style.SelectionForeColor = Text;
+            column.HeaderCell.Style.BackColor = HeaderBg;
+            column.HeaderCell.Style.ForeColor = HeaderText;
+            column.HeaderCell.Style.SelectionBackColor = HeaderBg;
+            column.HeaderCell.Style.SelectionForeColor = HeaderText;
             // Cột đã đặt độ rộng rồi thì không thay đổi nữa.
             if (Convert.ToString(column.Tag) == "AA_FixedWidth")
             return;

@@ -11,7 +11,7 @@ namespace AuctionArena.WinForms
         {
             InitializeComponent();
             Theme.Apply(this);
-            btnTao.BackColor = Theme.Primary;
+            btnTao.BackColor = Theme.Success;
             btnTao.ForeColor = Color.White;
         }
 
