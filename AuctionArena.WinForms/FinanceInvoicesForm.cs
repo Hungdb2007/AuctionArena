@@ -137,13 +137,16 @@ namespace AuctionArena.WinForms
                 {
                     throw new BusinessException("Hãy chọn hóa đơn.");
                 }
-                var reason = Theme.AskReason(this, "Căn cứ hủy hóa đơn chưa thu tiền/chưa chuyển cọc:");
+                var reason = Theme.AskReason(this, "Căn cứ hủy hóa đơn chưa thu tiền (khách rút lui, không phạt cọc):");
                 if (reason == null)
                 {
                     return;
                 }
-                Execute(() => new BillingService().CancelUncollected(Actor, selected.InvoiceId, reason), 
-                "Hủy "+selected.InvoiceCode+"? Giữ nguyên dữ liệu chứng từ gốc, không đảo cọc.");
+                // Mô tả đúng hệ quả: đảo cọc chờ hoàn, lô/hiện vật về kho để đấu giá lại.
+                Execute(() => new BillingService().CancelUncollected(Actor, selected.InvoiceId, reason),
+                "Hủy "+selected.InvoiceCode+"? Khách rút lui không bị phạt: tiền cọc đã chuyển vào hóa đơn được đảo lại, " +
+                "chờ hoàn qua \"Hoàn tiền cọc\"; các lô được giải phóng và hiện vật về kho để đưa lên phiên mới. " +
+                "Chứng từ gốc vẫn được giữ để truy vết. Chỉ áp dụng khi chưa thu tiền, chưa giao hàng, chưa chi trả chủ hàng.");
             });
             cancel.Width = 230;
             Height = 840;

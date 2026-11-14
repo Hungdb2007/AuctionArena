@@ -201,7 +201,7 @@ namespace AuctionArena.Services
                 return new CustomerParticipation
                 {
                     Registrations = regs.Count, WonLots = db.AuctionLots.Count(x => x.WinningCustomerId == id), 
-                    Invoices = invoices.Count, TotalSpent = invoices.Sum(x => x.PaidAmount+x.DepositApplied), 
+                    Invoices = invoices.Count, TotalSpent = invoices.Where(x => x.InvoiceStatus != "Cancelled").Sum(x => x.PaidAmount+x.DepositApplied),
                     RemainingDebt = invoices.Where(x => x.InvoiceStatus != "Cancelled").Sum(x => Math.Max(0m, x.TotalDue-x.PaidAmount)), 
                     HeldDeposit = regs.Sum(x => Math.Max(0m, x.DepositPaid-x.DepositApplied-x.DepositRefunded-x.DepositForfeited))
                 };

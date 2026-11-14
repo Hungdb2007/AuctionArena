@@ -346,21 +346,46 @@ namespace AuctionArena.Services
                             if (invoices.Add(invoice.Key))row.InvoiceCount++;
                         }
                     }
-                    // Tỷ lệ bán thành công tính theo ngày chốt lô.
-                    var outcomes = (from lot in db.AuctionLots
+                    // Tỷ lệ bán thành công tính theo ngày chốt lô thực tế (nhật ký CLOSE_LOT),
+                    // dữ liệu cũ không có nhật ký thì dùng giờ đóng dự kiến ClosesAt.
+                    var closedInRange = db.AuditLogs.Where(a => a.ActionCode == "CLOSE_LOT" && a.EntityName == "AuctionLots" &&
+                    a.OccurredAt>=start && a.OccurredAt<end)
+                    .Select(a => a.EntityId).Distinct().ToList()
+                    .Select(x => { int id; return int.TryParse(x, out id)?id:0; }).Where(x => x>0).ToList();
+                    var candidates = (from lot in db.AuctionLots
                     join item in db.Items on lot.ItemId equals item.ItemId
                     join category in db.Categories on item.CategoryId equals category.CategoryId
                     join session in db.AuctionSessions on lot.SessionId equals session.SessionId
-                    where lot.ClosesAt>=start && lot.ClosesAt<end && 
-                    (!filter.SessionId.HasValue || lot.SessionId == filter.SessionId.Value) && 
+                    where ((lot.ClosesAt>=start && lot.ClosesAt<end) || closedInRange.Contains(lot.LotId)) &&
+                    (!filter.SessionId.HasValue || lot.SessionId == filter.SessionId.Value) &&
                     (!filter.CategoryId.HasValue || item.CategoryId == filter.CategoryId.Value) && 
                     (!filter.ConsignorId.HasValue || item.ConsignorId == filter.ConsignorId.Value) && 
                     (lot.LotStatus == "Sold" || lot.LotStatus == "ReserveNotMet" || lot.LotStatus == "Unsold")
                     select new
                     {
-                        lot.ClosesAt, lot.LotStatus, session.SessionCode, session.SessionName, category.CategoryName, 
+                        lot.LotId, lot.ClosesAt, lot.LotStatus, session.SessionCode, session.SessionName, category.CategoryName,
                         lot.WinningCustomerId
                     }).ToList();
+                    // Một truy vấn gom nhóm lấy giờ chốt thực tế của các lô ứng viên.
+                    var candidateKeys = candidates.Select(x => x.LotId.ToString(System.Globalization.CultureInfo.InvariantCulture)).Distinct().ToList();
+                    var closeTimes = db.AuditLogs.Where(a => a.ActionCode == "CLOSE_LOT" && a.EntityName == "AuctionLots" &&
+                    candidateKeys.Contains(a.EntityId))
+                    .GroupBy(a => a.EntityId)
+                    .Select(g => new
+                    {
+                        g.Key, ClosedAt = g.Max(a => a.OccurredAt)
+                    }).ToList()
+                    .ToDictionary(x => x.Key, x => x.ClosedAt, StringComparer.Ordinal);
+                    var outcomes = candidates.Select(x =>
+                    {
+                        DateTime closedAt;
+                        if (!closeTimes.TryGetValue(x.LotId.ToString(System.Globalization.CultureInfo.InvariantCulture), out closedAt))
+                        closedAt = x.ClosesAt;
+                        return new
+                        {
+                            ClosesAt = closedAt, x.LotStatus, x.SessionCode, x.SessionName, x.CategoryName, x.WinningCustomerId
+                        };
+                    }).Where(x => x.ClosesAt>=start && x.ClosesAt<end).ToList();
                     // Lọc hạng khách ở chỉ tiêu kết quả: lô không bán không có hạng, nên.
                     // không suy diễn tỷ lệ thành công khi lọc hạng.
                     if (filter.MemberTier == null)

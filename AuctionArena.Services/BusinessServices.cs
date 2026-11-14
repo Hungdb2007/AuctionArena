@@ -338,7 +338,8 @@ namespace AuctionArena.Services
                 }
             }
         }
-        // Chỉ hủy hóa đơn chưa có thu tiền, chưa chuyển cọc, chưa có phiếu kho.
+        // Chỉ hủy hóa đơn chưa thu tiền thật (chỉ có chuyển cọc), chưa có phiếu kho, chưa chi trả chủ hàng.
+        // Khách rút lui không phạt: đảo chuyển cọc về số dư hoàn được, lô -> Defaulted, hiện vật -> InStock.
         // Giữ số hóa đơn và chi tiết để bảo toàn lịch sử, không tạo lại chứng từ trùng.
         public void CancelUncollected(int actor, int invoiceId, string reason) //Hủy hóa đơn chưa thu khi đủ điều kiện (338-370).
         {
@@ -353,18 +354,60 @@ namespace AuctionArena.Services
                 {
                     SecurityService.Require(db, actor, "INVOICES", "Edit");
                     var invoice = db.Invoices.SingleOrDefault(x => x.InvoiceId == invoiceId);
-                    if (invoice == null || invoice.InvoiceStatus != "Unpaid" || invoice.PaidAmount != 0m || invoice.DepositApplied != 0m)
-                    throw new BusinessException("Chỉ hủy hóa đơn Chưa thu tiền và Chưa chuyển cọc. Hóa đơn có cọc yêu cầu đối soát.");
-                    if (db.Payments.Any(x => x.InvoiceId == invoiceId) || db.StockIssues.Any(x => x.InvoiceId == invoiceId) || 
-                    db.InvoiceReviewCases.Any(x => x.InvoiceId == invoiceId) || db.InvoiceAdjustments.Any(x => x.InvoiceId == invoiceId))
-                    throw new BusinessException("Đã có giao dịch hoặc hồ sơ đối soát nên không được hủy trực tiếp.");
-                    var lots = db.InvoiceDetails.Where(x => x.InvoiceId == invoiceId).Select(x => x.LotId).ToList();
-                    if (db.SellerPayoutOrders.Any(x => lots.Contains(x.LotId)) || db.SellerPayouts.Any(x => lots.Contains(x.LotId)))
+                    // Hóa đơn được cọc trả đủ có trạng thái Paid nhưng vẫn chưa thu tiền thật (PaidAmount = 0).
+                    if (invoice == null || (invoice.InvoiceStatus != "Unpaid" && invoice.InvoiceStatus != "Paid") || invoice.PaidAmount != 0m)
+                    throw new BusinessException("Chỉ hủy hóa đơn chưa thu tiền thật (chỉ có tiền cọc chuyển sang). Hóa đơn đã thu một phần, quá hạn hoặc đã hủy cần đối soát.");
+                    // Chỉ được phép có bút toán chuyển cọc; mọi phiếu thu/tịch thu khác đều chặn.
+                    var payments = db.Payments.Where(x => x.InvoiceId == invoiceId).ToList();
+                    if (payments.Any(x => x.PaymentType != "DepositTransfer"))
+                    throw new BusinessException("Hóa đơn đã có phiếu thu tiền hoặc tịch thu cọc, không được hủy trực tiếp.");
+                    if (db.StockIssues.Any(x => x.InvoiceId == invoiceId))
+                    throw new BusinessException("Hóa đơn đã lập phiếu xuất kho/giao hàng, không được hủy.");
+                    if (db.InvoiceReviewCases.Any(x => x.InvoiceId == invoiceId) || db.InvoiceAdjustments.Any(x => x.InvoiceId == invoiceId))
+                    throw new BusinessException("Hóa đơn đang có hồ sơ đối soát hoặc điều chỉnh, không được hủy trực tiếp.");
+                    var lotIds = db.InvoiceDetails.Where(x => x.InvoiceId == invoiceId).Select(x => x.LotId).ToList();
+                    if (db.SellerPayoutOrders.Any(x => lotIds.Contains(x.LotId)) || db.SellerPayouts.Any(x => lotIds.Contains(x.LotId)))
                     throw new BusinessException("Đã phát sinh chi trả chủ hàng, không được hủy.");
+                    var lots = db.AuctionLots.Where(x => lotIds.Contains(x.LotId)).ToList();
+                    if (lots.Count == 0 || lots.Count != lotIds.Count ||
+                    lots.Any(x => x.LotStatus != "Sold" || x.WinningCustomerId != invoice.CustomerId))
+                    throw new BusinessException("Lot của hóa đơn đã thay đổi trạng thái hoặc người thắng, cần đối soát.");
+                    var itemIds = lots.Select(x => x.ItemId).ToList();
+                    var items = db.Items.Where(x => itemIds.Contains(x.ItemId)).ToList();
+                    if (items.Count != lots.Count || items.Any(x => x.ItemStatus != "Sold") ||
+                    db.StockIssueDetails.Any(x => itemIds.Contains(x.ItemId)) || db.ConsignorReturns.Any(x => itemIds.Contains(x.ItemId)))
+                    throw new BusinessException("Hiện vật đã giao/trả hoặc không còn ở trạng thái đã bán, không được hủy.");
+                    // Đảo chuyển cọc: số cọc trở lại số dư của đăng ký để hoàn qua chức năng "Hoàn tiền cọc".
+                    decimal applied = invoice.DepositApplied;
+                    var reg = db.Registrations.SingleOrDefault(x => x.SessionId == invoice.SessionId && x.CustomerId == invoice.CustomerId);
+                    if (applied<0m || payments.Sum(x => x.Amount) != applied || (applied>0m && (reg == null || reg.DepositApplied<applied)))
+                    throw new BusinessException("Số cọc đã chuyển không khớp hóa đơn/đăng ký, cần đối soát thủ công.");
+                    if (applied>0m)
+                    {
+                        reg.DepositApplied -= applied;
+                        db.InvoiceAdjustments.Add(new InvoiceAdjustmentEntity
+                        {
+                            AdjustmentCode = Code("DC"), InvoiceId = invoiceId, RegistrationId = reg.RegistrationId,
+                            AdjustmentType = "DepositTransferReversal", Amount = applied,
+                            Reason = "Đảo chuyển cọc do hủy hóa đơn chưa thu, cọc chờ hoàn cho khách", CreatedAt = Now(), CreatedByUserId = actor
+                        });
+                        Audit(db, actor, "REVERSE_DEPOSIT_TRANSFER", "Registrations", reg.RegistrationId,
+                        "Đảo chuyển cọc " + applied.ToString("N0") + " từ hóa đơn " + invoice.InvoiceCode + ", chờ hoàn cọc");
+                    }
+                    // Giữ hóa đơn/chi tiết để truy vết; trả lô và hiện vật về kho để đấu giá lại như luồng bỏ cọc.
+                    string oldStatus = invoice.InvoiceStatus;
                     invoice.InvoiceStatus = "Cancelled";
-                    Audit(db, actor, "CANCEL_UNCOLLECTED_INVOICE", "Invoices", invoiceId, "Unpaid -> Cancelled; "+reason);
+                    foreach (var lot in lots) lot.LotStatus = "Defaulted";
+                    foreach (var item in items) item.ItemStatus = "InStock";
+                    Audit(db, actor, "CANCEL_UNCOLLECTED_INVOICE", "Invoices", invoiceId,
+                    oldStatus + " -> Cancelled; đảo cọc " + applied.ToString("N0") + ", đưa " + items.Count + " hiện vật về kho; " + reason);
                     db.SaveChanges();
                     tx.Commit();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    RollbackSafely(tx);
+                    throw new BusinessException("Hóa đơn hoặc tiền cọc vừa thay đổi tại máy khác, hãy tải lại.");
                 }
                 catch
                 {
