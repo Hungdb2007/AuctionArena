@@ -282,12 +282,7 @@
         </TablixColumnHierarchy>
         <TablixRowHierarchy>
           <TablixMembers>
-            <TablixMember>
-              <Group>
-                <GroupExpressions/>
-              </Group>
-            </TablixMember>
-            <TablixMember/>
+            <TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember>
           </TablixMembers>
         </TablixRowHierarchy>
         <DataSetName>IssueData</DataSetName>
