@@ -66,7 +66,7 @@ namespace AuctionArena.WinForms
                 var remaining = lot.ClosesAt-DateTime.Now;
                 message.Text = "AUCTION ARENA\nLOT #"+lot.LotNumber+"\n\n"+lot.CurrentPrice.ToString("N0")+" đ\n\n"+
                 "THẺ DẪN ĐẦU: "+(lead == null?"—":lead.PaddleNumber.ToString())+"\nBƯỚC GIÁ: "+lot.BidIncrement.ToString("N0")+
-                " đ\nCÒN: "+(remaining.TotalSeconds<=0?"Hết giờ":remaining.ToString(@"hh\:mm\:ss"));
+                " đ\nCÒN: "+(remaining.TotalSeconds<=0?"Hết giờ":AuctionRoomForm.Countdown(remaining));
             }
             catch (Exception ex)
             {

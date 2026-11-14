@@ -210,13 +210,23 @@ namespace AuctionArena.WinForms
                 {
                     return;
                 }
+                // Thu trễ qua ngân hàng cũng phải có mã chuyển khoản như thu thường.
+                string reference = null;
+                if (method.Text == "BankTransfer")
+                {
+                    reference = Theme.AskReason(this, "Mã xác nhận chuyển khoản ngân hàng (5–100 ký tự):");
+                    if (reference == null)
+                    {
+                        return;
+                    }
+                }
                 if (MessageBox.Show("Xác nhận khoản thu trễ " + money.ToString("N0") + " đ"+
                 " cho hóa đơn " + row.InvoiceCode +
                 "?\nHạn gốc: " + row.DueAt.ToString("dd/MM/yyyy HH:mm") +
                 "\nLý do/phê duyệt: " + reason +
                 "\nKhông tự xóa vi phạm hoặc hoàn cọc đã tịch thu.", 
                 "Kiểm tra trước khi ghi sổ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)return;
-                new BillingService().PayLateInvoiceWithApproval(Actor, row.InvoiceId, money, method.Text, reason);
+                new BillingService().PayLateInvoiceWithApproval(Actor, row.InvoiceId, money, method.Text, reason, reference);
                 Reload();
                 MessageBox.Show("Đã ghi khoản thu trễ và nhật ký. Hãy đối chiếu sổ quỹ thực tế.");
             });

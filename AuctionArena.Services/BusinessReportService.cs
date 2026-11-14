@@ -182,6 +182,20 @@ namespace AuctionArena.Services
             grouping == "Month"?date.ToString("yyyy-MM"):
             grouping == "Session"?session:category;
         }
+        // Nhóm theo ngày: sắp theo ngày thực, không theo chuỗi dd/MM/yyyy (04/11 đứng trước 20/10).
+        private static List<BusinessReportRow> SortRows(IEnumerable<BusinessReportRow> rows, string grouping, StringComparer comparer)
+        {
+            if (grouping != "Day")
+            {
+                return rows.OrderBy(x => x.GroupLabel, comparer).ToList();
+            }
+            return rows.OrderBy(x =>
+            {
+                DateTime d;
+                return DateTime.TryParseExact(x.GroupLabel, "dd/MM/yyyy", System.Globalization.CultureInfo.CurrentCulture,
+                System.Globalization.DateTimeStyles.None, out d)?d:DateTime.MaxValue;
+            }).ThenBy(x => x.GroupLabel, comparer).ToList();
+        }
         public List<BusinessReportOption> Sessions(int actor) //Lấy danh sách phiên(185-196)
         {
             using (var db = Factory())
@@ -357,7 +371,7 @@ namespace AuctionArena.Services
                         if (outcome.LotStatus == "Sold")row.SoldLots++;
                         else row.UnsoldLots++;
                     }
-                    return rows.Values.OrderBy(x => x.GroupLabel, StringComparer.Ordinal).ToList();
+                    return SortRows(rows.Values, grouping, StringComparer.Ordinal);
                 }
                 if (kind == "Debt")
                 {
@@ -417,7 +431,7 @@ namespace AuctionArena.Services
                             if (already.Add(invoice.InvoiceId))row.InvoiceCount++;
                         }
                     }
-                    return rows.Values.OrderBy(x => x.GroupLabel).ToList();
+                    return SortRows(rows.Values, grouping, StringComparer.CurrentCulture);
                 }
                 // Báo cáo chi trả dùng ngày thực chi, không tính lệnh đang chờ.
                 var payouts = (from payout in db.SellerPayouts
@@ -453,7 +467,7 @@ namespace AuctionArena.Services
                     row.SellerFee+=x.SellerFee;
                     row.PaidToSeller+=x.PayoutAmount;
                 }
-                return rows.Values.OrderBy(x => x.GroupLabel).ToList();
+                return SortRows(rows.Values, grouping, StringComparer.CurrentCulture);
             }
         }
     }

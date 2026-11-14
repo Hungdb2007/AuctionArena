@@ -220,12 +220,12 @@ namespace AuctionArena.Services
                 return q.OrderBy(x => x.FullName).ToList();
             }
         }
-        public List<ConsignorEntity> ConsignorOptions(int actor, string permission)//Lấy chủ hàng cho danh sách chọn.
+        public List<ConsignorEntity> ConsignorOptions(int actor, string permission, bool includeInactive = false)//Lấy chủ hàng cho danh sách chọn.
         {
             using (var db = Factory())
             {
                 SecurityService.Require(db, actor, permission, "View");
-                return Repo<ConsignorEntity>(db).Query().AsNoTracking().Where(x => x.ConsignorStatus != "Inactive")
+                return Repo<ConsignorEntity>(db).Query().AsNoTracking().Where(x => includeInactive || x.ConsignorStatus != "Inactive")
                 .OrderBy(x => x.FullName).ToList();
             }
         }
@@ -419,10 +419,7 @@ namespace AuctionArena.Services
                     throw new BusinessException("Mã loại hiện vật trùng.");
                     if (db.Categories.Any(z => z.CategoryId != x.CategoryId && z.CategoryName.ToLower() == name.ToLower()))
                     throw new BusinessException("Tên loại hiện vật đã tồn tại (không phân biệt hoa thường).");
-                    var c = x.CategoryId == 0?new CategorieEntity
-                    {
-                        IsActive = true
-                    }
+                    var c = x.CategoryId == 0?new CategorieEntity()
                     :db.Categories.Single(z => z.CategoryId == x.CategoryId);
                     if (x.CategoryId == 0)
                     {
@@ -432,7 +429,7 @@ namespace AuctionArena.Services
                     c.CategoryName = name;
                     c.Description = x.Description;
                     c.SortOrder = x.SortOrder;
-                    if (x.CategoryId != 0)c.IsActive = x.IsActive;
+                    c.IsActive = x.IsActive;
                     db.SaveChanges();
                     Audit(db, actor, "CATEGORY_SAVE", "Categories", c.CategoryId, "Lưu loại hiện vật "+code);
                     db.SaveChanges();
@@ -469,7 +466,9 @@ namespace AuctionArena.Services
             {
                 SecurityService.Require(db, actor, "CONTRACTS", "View");
                 return Repo<ItemEntity>(db).Query().AsNoTracking().Where(x => x.ConsignorId == consignorId && x.ItemStatus == "Approved" && 
-                !db.ConsignmentContractDetails.Any(d => d.ItemId == x.ItemId))
+                // Hợp đồng đã hủy không giữ hiện vật; cho phép ký lại.
+                !db.ConsignmentContractDetails.Any(d => d.ItemId == x.ItemId && 
+                db.ConsignmentContracts.Any(c => c.ContractId == d.ContractId && c.ContractStatus != "Cancelled")))
                 .OrderBy(x => x.ItemCode).ToList();
             }
         }
@@ -492,11 +491,6 @@ namespace AuctionArena.Services
                     var code = string.IsNullOrWhiteSpace(x.ItemCode)?Code("HV"):x.ItemCode.Trim();
                     if (code.Length>30 || db.Items.Any(z => z.ItemCode == code && z.ItemId != x.ItemId))
                     throw new BusinessException("Mã hiện vật đã tồn tại hoặc quá dài.");
-                    var category = db.Categories.SingleOrDefault(z => z.CategoryId == x.CategoryId);
-                    var consignor = db.Consignors.SingleOrDefault(z => z.ConsignorId == x.ConsignorId);
-                    if (category == null || consignor == null || 
-                    (x.ItemId == 0 && (!category.IsActive || consignor.ConsignorStatus == "Inactive")))
-                    throw new BusinessException("Loại hiện vật hoặc chủ hàng không còn hoạt động.");
                     var item = x.ItemId == 0?new ItemEntity
                     {
                         CreatedAt = Now(), ItemStatus = "PendingAppraisal"
@@ -513,10 +507,17 @@ namespace AuctionArena.Services
                         if (item.ItemStatus != "PendingAppraisal" && item.ItemStatus != "NeedInfo" && 
                         item.ItemStatus != "Rejected" && item.ItemStatus != "Approved")
                         throw new BusinessException("Chỉ sửa hồ sơ khi chưa được duyệt thẩm định.");
-                        if (db.ConsignmentContractDetails.Any(z => z.ItemId == x.ItemId) || 
+                        if (db.ConsignmentContractDetails.Any(z => z.ItemId == x.ItemId && 
+                        db.ConsignmentContracts.Any(c => c.ContractId == z.ContractId && c.ContractStatus != "Cancelled")) || 
                         db.AuctionLots.Any(z => z.ItemId == x.ItemId) || db.StockReceiptDetails.Any(z => z.ItemId == x.ItemId))
                         throw new BusinessException("Hiện vật có chứng từ: không được sửa hồ sơ gốc.");
                     }
+                    // Kiểm tra trạng thái hồ sơ trước, sau đó mới kiểm tra loại/chủ hàng.
+                    var category = db.Categories.SingleOrDefault(z => z.CategoryId == x.CategoryId);
+                    var consignor = db.Consignors.SingleOrDefault(z => z.ConsignorId == x.ConsignorId);
+                    if (category == null || consignor == null || 
+                    (x.ItemId == 0 && (!category.IsActive || consignor.ConsignorStatus == "Inactive")))
+                    throw new BusinessException("Loại hiện vật hoặc chủ hàng không còn hoạt động.");
                     item.ItemName = x.ItemName.Trim();
                     item.CategoryId = x.CategoryId;
                     item.ConsignorId = x.ConsignorId;
@@ -796,11 +797,22 @@ namespace AuctionArena.Services
                     {
                         throw new BusinessException("Không tìm thấy hiện vật.");
                     }
-                    if (item.ItemStatus != "Approved" || 
-                    db.ConsignmentContractDetails.Any(x => x.ItemId == id) || 
+                    // Chỉ xóa hiện vật chưa vào nghiệp vụ (chưa ký gửi, nhập kho, lên lot).
+                    if ((item.ItemStatus != "PendingAppraisal" && item.ItemStatus != "NeedInfo" && 
+                    item.ItemStatus != "Rejected" && item.ItemStatus != "Approved") || 
+                    db.ConsignmentContractDetails.Any(x => x.ItemId == id && 
+                    db.ConsignmentContracts.Any(c => c.ContractId == x.ContractId && c.ContractStatus != "Cancelled")) || 
                     db.StockReceiptDetails.Any(x => x.ItemId == id) || db.AuctionLots.Any(x => x.ItemId == id) || 
                     db.StockIssueDetails.Any(x => x.ItemId == id) || db.ItemImages.Any(x => x.ItemId == id))
                     throw new BusinessException("Hiện vật đã có chứng từ, ảnh hoặc không còn chờ thẩm định; không thể xóa.");
+                    // Gỡ dòng chi tiết của hợp đồng đã hủy (hợp đồng vẫn giữ lại, có ghi nhật ký).
+                    foreach (var stale in db.ConsignmentContractDetails.Where(x => x.ItemId == id).ToList())
+                    {
+                        Audit(db, actor, "CONTRACT_DETAIL_RELEASE", "ConsignmentContracts", stale.ContractId, 
+                        "Gỡ hiện vật "+item.ItemCode+" khỏi hợp đồng đã hủy #"+stale.ContractId+" trước khi xóa hiện vật");
+                        db.ConsignmentContractDetails.Remove(stale);
+                    }
+                    db.SaveChanges();
                     db.Items.Remove(item);
                     Audit(db, actor, "ITEM_DELETE", "Items", id, "Xóa hiện vật chưa có chứng từ");
                     db.SaveChanges();
@@ -845,9 +857,19 @@ namespace AuctionArena.Services
                     var items = db.Items.Where(x => itemIds.Contains(x.ItemId)).ToList();
                     if (items.Count != itemIds.Count || items.Any(x => x.ConsignorId != consignorId || x.ItemStatus != "Approved"))
                     throw new BusinessException("Chỉ hiện vật đã được duyệt thẩm định của đúng chủ hàng mới được ký gửi.");
-                    if (items.Any(x => db.ConsignmentContractDetails.Any(d => d.ItemId == x.ItemId)))
+                    var oldDetails = db.ConsignmentContractDetails.Where(d => itemIds.Contains(d.ItemId)).ToList();
+                    var oldIds = oldDetails.Select(d => d.ContractId).Distinct().ToList();
+                    if (db.ConsignmentContracts.Any(c => oldIds.Contains(c.ContractId) && c.ContractStatus != "Cancelled"))
                     {
                         throw new BusinessException("Một hiện vật đã có hợp đồng ký gửi.");
+                    }
+                    // Hợp đồng cũ đã hủy: gỡ dòng chi tiết (UQ_ContractItem) và ghi nhật ký để còn vết.
+                    foreach (var stale in oldDetails)
+                    {
+                        var staleItem = items.Single(x => x.ItemId == stale.ItemId);
+                        Audit(db, actor, "CONTRACT_DETAIL_RELEASE", "ConsignmentContracts", stale.ContractId, 
+                        "Gỡ hiện vật "+staleItem.ItemCode+" khỏi hợp đồng đã hủy #"+stale.ContractId+" để ký hợp đồng mới");
+                        db.ConsignmentContractDetails.Remove(stale);
                     }
                     var seller = db.Consignors.Single(x => x.ConsignorId == consignorId);
                     // Chốt phí tại thời điểm ký, không lấy lại theo cấu hình khi chi trả.

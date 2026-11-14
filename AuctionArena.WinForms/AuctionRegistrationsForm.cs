@@ -35,13 +35,21 @@ namespace AuctionArena.WinForms
             method.SelectedIndex = 0;
             Controls.Add(Theme.Label("Phương thức", 680, 440));
             Controls.Add(method);
-            Action("Đăng ký khách", 20, 535, flags.Create, () => new RegistrationService().Register(Actor, sessionId, (int)customers.SelectedValue, PositiveInt(paddle.Text)));
+            Action("Đăng ký khách", 20, 535, flags.Create, () =>
+            {
+                if (customers.SelectedValue == null)
+                throw new BusinessException("Chưa chọn khách tham gia.");
+                new RegistrationService().Register(Actor, sessionId, (int)customers.SelectedValue, PositiveInt(paddle.Text));
+            });
             Action("Thu tiền cọc", 220, 535, flags.Edit, () => new DepositService().Collect(Actor, SelectedId(Grid, "RegistrationId"), Money(deposit.Text), method.Text));
             Action("Hoàn tiền cọc", 420, 535, flags.Edit, () => 
             {
-                if (MessageBox.Show("Đã hoàn tiền cho khách bằng tiền mặt và muốn ghi nhận giao dịch?", 
+                int id = SelectedId(Grid, "RegistrationId");
+                // Kiểm tra điều kiện hoàn cọc trước, tránh thu ngân chi tiền rồi mới bị từ chối.
+                Manager.CheckDepositRefund(Actor, id);
+                if (MessageBox.Show("Đã hoàn tiền cho khách bằng tiền mặt và muốn ghi nhận giao dịch?",
                 "Xác nhận thực chi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                new DepositService().Refund(Actor, SelectedId(Grid, "RegistrationId"));
+                new DepositService().Refund(Actor, id);
             });
             var batch = Action("Hoàn cọc khách không thắng", 20, 590, flags.Edit, () => 
             {

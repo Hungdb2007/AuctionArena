@@ -40,8 +40,11 @@ namespace AuctionArena.WinForms
             Action("Mở phiên", 820, 640, flags.Edit, () => Manager.OpenSession(Actor, SelectedId(Grid, "SessionId")));
             Action("Kết thúc phiên", 800, 530, flags.Edit, () => 
             {
+                int id = SelectedId(Grid, "SessionId");
+                var service = new SessionService();
+                service.CheckCanCloseSession(Actor, id); // Báo lỗi điều kiện trước khi hỏi xác nhận
                 if (MessageBox.Show("Kết thúc phiên đã chọn?", "Xác nhận", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                new SessionService().CloseSession(Actor, SelectedId(Grid, "SessionId"));
+                service.CloseSession(Actor, id);
             });
             var clone = Action("Nhân bản phiên nháp", 600, 640, flags.Create, () => 
             {
@@ -59,7 +62,8 @@ namespace AuctionArena.WinForms
                 if (MessageBox.Show("Chỉ được hủy phiên nháp chưa có giao dịch. Tiếp tục?", "Xác nhận hủy", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 Manager.CancelDraftSession(Actor, SelectedId(Grid, "SessionId"));
             });
-            Action("Cọc cần hoàn khi đóng", 800, 585, flags.Edit, () => 
+            // Nút này gọi dịch vụ cần quyền Sửa ĐĂNG KÝ (REGISTRATIONS), không phải quyền Sửa phiên.
+            var refundPreview = Action("Cọc cần hoàn khi đóng", 800, 585, false, () => 
             {
                 var id = SelectedId(Grid, "SessionId");
                 var preview = new DepositSettlementService().PreviewLoserRefunds(Actor, id);
@@ -67,6 +71,11 @@ namespace AuctionArena.WinForms
                 "\nSố tiền chờ hoàn: "+preview.TotalAmount.ToString("N0")+" đ.\n"+
                 "Hãy mở mục Đăng ký/Thu cọc của phiên để thực chi và xác nhận phiếu hoàn.", 
                 "Đối soát cọc cần hoàn");
+            });
+            Shown += (s, e) => Theme.Safe(() => 
+            {
+                PermissionFlags registrationRight;
+                refundPreview.Enabled = new AccountService().Permissions(Actor).TryGetValue("REGISTRATIONS", out registrationRight) && registrationRight.Edit;
             });
             Grid.SelectionChanged += (s, e) =>  //Xử lý tương tác và cập nhật trạng thái/hiển thị trong khối sự kiện.
             {

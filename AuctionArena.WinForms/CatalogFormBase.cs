@@ -63,6 +63,8 @@ namespace AuctionArena.WinForms
                 }
                 if (editing && HasUnsavedChanges() && !ConfirmDiscard())
                 {
+                    // Giữ thay đổi: đưa dòng chọn về bản ghi đang sửa để tránh xóa nhầm.
+                    BeginInvoke((Action)RestoreSelection);
                     return;
                 }
                 editing = false;
@@ -211,6 +213,31 @@ namespace AuctionArena.WinForms
             };
             Shown+=(s, e) => ReloadCore(null);
             ApplyMode();
+        }
+        void RestoreSelection()
+        {
+            suppress = true;
+            try
+            {
+                Grid.ClearSelection();
+                if (Current == null)
+                {
+                    Grid.CurrentCell = null;
+                    return;
+                }
+                foreach (DataGridViewRow row in Grid.Rows)
+                if (ReferenceEquals(row.DataBoundItem, Current))
+                {
+                    var cell = row.Cells.Cast<DataGridViewCell>().FirstOrDefault(c => c.Visible);
+                    if (cell != null)Grid.CurrentCell = cell;
+                    row.Selected = true;
+                    break;
+                }
+            }
+            finally
+            {
+                suppress = false;
+            }
         }
         string CurrentCode()
         {

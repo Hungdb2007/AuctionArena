@@ -234,7 +234,7 @@ namespace AuctionArena.WinForms
             decimal? requestedRate = null;
             if (!string.IsNullOrWhiteSpace(fee.Text))
             {
-                if (!decimal.TryParse(fee.Text, out percentage) || percentage<0m || percentage>100m)
+                if (!PercentInput.TryParse(fee.Text, out percentage) || percentage<0m || percentage>100m)
                 throw new BusinessException("Vui lòng nhập tỷ lệ phí từ 0 đến 100%.");
                 requestedRate = percentage/100m;
             }

@@ -82,7 +82,9 @@ namespace AuctionArena.Services
                 select new
                 {
                     Fee = i.BuyerFee-i.VipDiscount, 
-                    LastPaid = db.Payments.Where(p => p.InvoiceId == i.InvoiceId && p.PaymentType == "Invoice")
+                    // Tính cả chuyển cọc như báo cáo kinh doanh: hóa đơn trả bằng cọc vẫn có ngày thu.
+                    LastPaid = db.Payments.Where(p => p.InvoiceId == i.InvoiceId &&
+                    (p.PaymentType == "Invoice" || p.PaymentType == "DepositTransfer"))
                     .Max(p => (DateTime?)p.PaidAt)
                 }).ToList();
                 var grouped = paid.Where(x => x.LastPaid.HasValue).GroupBy(x => new

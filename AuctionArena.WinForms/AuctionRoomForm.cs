@@ -28,7 +28,7 @@ namespace AuctionArena.WinForms
             lotId = id;
             canBid = allowedBid;
             canClose = allowedClose;
-            Text = "Điều hành đấu giá trực tiếp – Lot "+id;
+            Text = "Điều hành đấu giá trực tiếp"; // Số lot (LotNumber) được gắn vào tiêu đề sau khi tải lot
             Width = 1030;
             Height = 760;
             StartPosition = FormStartPosition.CenterParent;
@@ -80,8 +80,10 @@ namespace AuctionArena.WinForms
                 {
                     throw new BusinessException("Paddle không hợp lệ hoặc chưa đóng đủ cọc.");
                 }
+                if (latest == null)
+                throw new BusinessException("Chưa tải lot.");
                 decimal amount; if (!decimal.TryParse(bid.Text, out amount) || amount<=0)throw new BusinessException("Giá trả không hợp lệ.");
-                string msg = "Ghi bid lot #"+lotId+"\nThẻ: "+option.PaddleNumber+" – "+option.CustomerName+
+                string msg = "Ghi bid lot #"+latest.LotNumber+"\nThẻ: "+option.PaddleNumber+" – "+option.CustomerName+
                 "\nGiá: "+amount.ToString("N0")+" đ?";
                 if (MessageBox.Show(msg, "Xác nhận giá đấu trực tiếp", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 {
@@ -106,7 +108,7 @@ namespace AuctionArena.WinForms
                 var winner = snapshot.LeadingCustomerId.HasValue ? manager.PaddlesForLot(actor, lotId)
                 .FirstOrDefault(x => x.CustomerId == snapshot.LeadingCustomerId.Value):null;
                 string result = snapshot.CurrentPrice>=snapshot.ReservePrice && snapshot.LeadingCustomerId.HasValue ? "Đạt giá sàn" : "Không đạt giá sàn";
-                string question = "Chốt lot #"+lotId+"\nGiá búa dự kiến: "+snapshot.CurrentPrice.ToString("N0")+" đ\n"+
+                string question = "Chốt lot #"+snapshot.LotNumber+"\nGiá búa dự kiến: "+snapshot.CurrentPrice.ToString("N0")+" đ\n"+
                 "Paddle dẫn đầu: "+(winner != null?winner.PaddleNumber.ToString():"Không có")+"\nKết quả: "+result+"?";
                 if (MessageBox.Show(question, "Xác nhận chốt", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
@@ -181,6 +183,7 @@ namespace AuctionArena.WinForms
                     return;
                 }
                 latest = data.lot;
+                Text = "Điều hành đấu giá trực tiếp – Lot "+latest.LotNumber;
                 currentPaddles = data.paddles;
                 price.Text = "Giá hiện tại: "+latest.CurrentPrice.ToString("N0")+" đ";
                 var option = latest.LeadingCustomerId.HasValue?
@@ -188,7 +191,7 @@ namespace AuctionArena.WinForms
                 leader.Text = "Paddle dẫn đầu: "+(option == null?"Chưa có":option.PaddleNumber.ToString());
                 status.Text = "Trạng thái: "+latest.LotStatus+" · Bước giá: "+latest.BidIncrement.ToString("N0")+" đ";
                 var seconds = (int)Math.Ceiling((latest.ClosesAt-DateTime.Now).TotalSeconds);
-                clock.Text = "Còn: "+(seconds<=0?"Đã hết giờ":TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss"));
+                clock.Text = "Còn: "+(seconds<=0?"Đã hết giờ":Countdown(TimeSpan.FromSeconds(seconds)));
                 place.Enabled = canBid && latest.LotStatus == "Open" && seconds>0;
                 close.Enabled = canClose && latest.LotStatus == "Open";
                 grid.DataSource = data.bids;
@@ -206,6 +209,11 @@ namespace AuctionArena.WinForms
             {
                 loading = false;
             }
+        }
+        // Định dạng thời gian còn lại; hiện thêm số ngày khi còn từ 1 ngày trở lên.
+        internal static string Countdown(TimeSpan remaining)
+        {
+            return (remaining.Days>=1?remaining.Days+" ngày ":"")+remaining.ToString(@"hh\:mm\:ss");
         }
         void OpenProjector() //Mở hoặc đưa màn chiếu lên trước.
         {

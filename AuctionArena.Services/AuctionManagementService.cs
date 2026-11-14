@@ -119,18 +119,7 @@ namespace AuctionArena.Services
                 try
                 {
                     SecurityService.Require(db, actor, "LOTS", "Edit");
-                    var session = db.AuctionSessions.SingleOrDefault(x => x.SessionId == sessionId);
-                    if (session == null || (session.SessionStatus != "Draft" && session.SessionStatus != "Planned"))
-                    throw new BusinessException("Chỉ đánh số lot trước phiên.");
-                    var lots = db.AuctionLots.Where(x => x.SessionId == sessionId).OrderBy(x => x.LotNumber).ToList();
-                    if (lots.Count == 0)
-                    {
-                        throw new BusinessException("Phiên chưa có lot.");
-                    }
-                    var ids = lots.Select(x => x.LotId).ToList();
-                    if (lots.Any(x => x.LotStatus != "Planned") || db.Bids.Any(x => ids.Contains(x.LotId)) || 
-                    db.Registrations.Any(x => x.SessionId == sessionId))
-                    throw new BusinessException("Lot đã phát sinh giao dịch hoặc đăng ký; không thể đánh số lại.");
+                    var lots = VerifyRenumber(db, sessionId);
                     if (lots.Max(x => x.LotNumber)>int.MaxValue-lots.Count)
                     throw new BusinessException("Không còn khoảng số tạm an toàn.");
                     int offset = lots.Max(x => x.LotNumber)+1;
@@ -154,6 +143,50 @@ namespace AuctionArena.Services
                     RollbackSafely(tx);
                     throw;
                 }
+            }
+        }
+        // Kiểm tra điều kiện đánh lại số lot (dùng chung cho kiểm tra trước xác nhận và khi thực hiện).
+        List<AuctionLotEntity> VerifyRenumber(AuctionArenaDbContext db, int sessionId)
+        {
+            var session = db.AuctionSessions.SingleOrDefault(x => x.SessionId == sessionId);
+            if (session == null || (session.SessionStatus != "Draft" && session.SessionStatus != "Planned"))
+            throw new BusinessException("Chỉ đánh số lot trước phiên.");
+            var lots = db.AuctionLots.Where(x => x.SessionId == sessionId).OrderBy(x => x.LotNumber).ToList();
+            if (lots.Count == 0)
+            {
+                throw new BusinessException("Phiên chưa có lot.");
+            }
+            var ids = lots.Select(x => x.LotId).ToList();
+            if (lots.Any(x => x.LotStatus != "Planned") || db.Bids.Any(x => ids.Contains(x.LotId)) ||
+            db.Registrations.Any(x => x.SessionId == sessionId))
+            throw new BusinessException("Lot đã phát sinh giao dịch hoặc đăng ký; không thể đánh số lại.");
+            return lots;
+        }
+        // Chỉ đọc: báo lỗi trước khi hỏi xác nhận đánh lại số lot.
+        public void CheckRenumberPlannedLots(int actor, int sessionId)
+        {
+            using (var db = Factory())
+            {
+                SecurityService.Require(db, actor, "LOTS", "Edit");
+                VerifyRenumber(db, sessionId);
+            }
+        }
+        // Chỉ đọc: kiểm tra điều kiện hoàn cọc trước khi thu ngân chi tiền và xác nhận (giống DepositService.Refund).
+        public void CheckDepositRefund(int actor, int registrationId)
+        {
+            using (var db = Factory())
+            {
+                SecurityService.Require(db, actor, "REGISTRATIONS", "Edit");
+                var reg = db.Registrations.AsNoTracking().SingleOrDefault(x => x.RegistrationId == registrationId);
+                if (reg == null)
+                throw new BusinessException("Hãy chọn một dòng.");
+                if (db.AuctionSessions.Single(x => x.SessionId == reg.SessionId).SessionStatus != "Closed")
+                throw new BusinessException("Phiên chưa kết thúc.");
+                if (db.AuctionLots.Any(x => x.SessionId == reg.SessionId && x.WinningCustomerId == reg.CustomerId && x.LotStatus == "Sold"))
+                throw new BusinessException("Khách thắng lot, chưa thể hoàn cọc tự động.");
+                if (db.AuctionLots.Any(x => x.SessionId == reg.SessionId && (x.LotStatus == "Open" || x.LotStatus == "Planned")))
+                throw new BusinessException("Phiên còn lot chưa chốt.");
+                ValidateMoney(reg.DepositPaid - reg.DepositApplied - reg.DepositRefunded - reg.DepositForfeited);
             }
         }
         public void ScheduleSession(int actor, int id) //Lập lịch phiên và các lô.
@@ -235,6 +268,9 @@ namespace AuctionArena.Services
             if (depositRequired.HasValue) ValidateMoney(depositRequired.Value);
             if (number <= 0 || close <= open)
             throw new BusinessException("Số lot hoặc thời gian không hợp lệ.");
+            // Giá sàn không được thấp hơn giá khởi điểm (giống thêm lot hàng loạt).
+            if (reserve < startPrice)
+            throw new BusinessException("Giá sàn không được thấp hơn giá khởi điểm.");
             using (var db = Factory()) using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
             {
                 try
@@ -250,24 +286,10 @@ namespace AuctionArena.Services
                     {
                         throw new BusinessException("Chỉ hiện vật trong kho được đưa vào lot.");
                     }
-                    // Cần giấy tờ của bên bán để ngăn chủ hàng dùng hồ sơ khách trả giá chính tài sản của mình.
-                    var seller = db.Consignors.Single(x => x.ConsignorId == item.ConsignorId);
-                    if (string.IsNullOrWhiteSpace(seller.IdentityNumber))
-                    throw new BusinessException("Chủ hàng chưa có số giấy tờ/đăng ký doanh nghiệp. Hãy bổ sung trước khi đưa tài sản vào phiên.");
                     if (db.AuctionLots.Any(x => x.SessionId == sessionId && (x.LotNumber == number || x.ItemId == itemId)) || 
                     db.AuctionLots.Any(x => x.ItemId == itemId && (x.LotStatus == "Open" || x.LotStatus == "Planned")))
                     throw new BusinessException("Số lot trùng hoặc hiện vật đang thuộc lot khác.");
-                    var consignment = (from d in db.ConsignmentContractDetails
-                    join c in db.ConsignmentContracts on d.ContractId equals c.ContractId
-                    where d.ItemId == itemId
-                    select new
-                    {
-                        c.ContractStatus, c.ExpiresAt, c.SellerFeeRate, c.ConsignorId
-                    }).SingleOrDefault();
-                    if (consignment == null || consignment.ContractStatus != "Active" || consignment.ConsignorId != item.ConsignorId)
-                    throw new BusinessException("Hiện vật chưa có hợp đồng ký gửi còn hiệu lực với đúng chủ hàng.");
-                    if (consignment.ExpiresAt.HasValue && close.Date>consignment.ExpiresAt.Value.Date)
-                    throw new BusinessException("Lot kết thúc sau ngày hết hạn hợp đồng ký gửi. Hãy gia hạn hợp đồng trước.");
+                    decimal chosenRate = CheckLotItemAndLockFee(db, item, close);
                     decimal effectiveDeposit = depositRequired ?? Math.Round(startPrice*RateSetting(db, "DepositRate"), 2, MidpointRounding.AwayFromZero);
                     if (effectiveDeposit<=0m)
                     throw new BusinessException("Mức cọc bằng 0. Cần nhập cọc riêng cho lot hoặc kiểm tra tỷ lệ cọc.");
@@ -278,11 +300,6 @@ namespace AuctionArena.Services
                         CurrentPrice = startPrice, OpensAt = open, ClosesAt = close, LotStatus = "Planned"
                     };
                     // Chốt tỷ lệ phí người bán tại thời điểm xếp lô, không lấy lại sau khi phiên chạy.
-                    var ownerRate = db.Consignors.Where(x => x.ConsignorId == item.ConsignorId)
-                    .Select(x => x.SellerFeeRate).SingleOrDefault();
-                    decimal chosenRate = consignment.SellerFeeRate??ownerRate??RateSetting(db, "SellerFeeRate");
-                    if (chosenRate<0m || chosenRate>1m)
-                    throw new BusinessException("Phí người bán ngoài khoảng 0–100%, cần kiểm tra hợp đồng.");
                     lot.SellerFeeRateLocked = chosenRate;
                     db.AuctionLots.Add(lot);
                     db.SaveChanges();
@@ -297,6 +314,30 @@ namespace AuctionArena.Services
                     throw;
                 }
             }
+        }
+        // Kiểm tra chủ hàng/hợp đồng của hiện vật và trả về phí người bán cần chốt; dùng chung cho thêm lẻ và hàng loạt.
+        decimal CheckLotItemAndLockFee(AuctionArenaDbContext db, ItemEntity item, DateTime close)
+        {
+            // Cần giấy tờ của bên bán để ngăn chủ hàng dùng hồ sơ khách trả giá chính tài sản của mình.
+            var seller = db.Consignors.Single(x => x.ConsignorId == item.ConsignorId);
+            if (string.IsNullOrWhiteSpace(seller.IdentityNumber))
+            throw new BusinessException("Chủ hàng chưa có số giấy tờ/đăng ký doanh nghiệp. Hãy bổ sung trước khi đưa tài sản vào phiên.");
+            int itemId = item.ItemId;
+            var consignment = (from d in db.ConsignmentContractDetails
+            join c in db.ConsignmentContracts on d.ContractId equals c.ContractId
+            where d.ItemId == itemId
+            select new
+            {
+                c.ContractStatus, c.ExpiresAt, c.SellerFeeRate, c.ConsignorId
+            }).SingleOrDefault();
+            if (consignment == null || consignment.ContractStatus != "Active" || consignment.ConsignorId != item.ConsignorId)
+            throw new BusinessException("Hiện vật chưa có hợp đồng ký gửi còn hiệu lực với đúng chủ hàng.");
+            if (consignment.ExpiresAt.HasValue && close.Date>consignment.ExpiresAt.Value.Date)
+            throw new BusinessException("Lot kết thúc sau ngày hết hạn hợp đồng ký gửi. Hãy gia hạn hợp đồng trước.");
+            decimal chosenRate = consignment.SellerFeeRate??seller.SellerFeeRate??RateSetting(db, "SellerFeeRate");
+            if (chosenRate<0m || chosenRate>1m)
+            throw new BusinessException("Phí người bán ngoài khoảng 0–100%, cần kiểm tra hợp đồng.");
+            return chosenRate;
         }
         public sealed class NewLotRow
         {
@@ -372,16 +413,12 @@ namespace AuctionArena.Services
                     db.AuctionLots.Any(x => x.SessionId == sessionId && lotNumbers.Contains(x.LotNumber)) || 
                     db.AuctionLots.Any(x => itemIds.Contains(x.ItemId)))
                     throw new BusinessException("Có số lot trùng hoặc hiện vật không sẵn sàng.");
-                    var contractItems = (from d in db.ConsignmentContractDetails
-                    join c in db.ConsignmentContracts on d.ContractId equals c.ContractId
-                    where itemIds.Contains(d.ItemId) && c.ContractStatus == "Active"
-                    select d.ItemId).Distinct().ToList();
-                    if (contractItems.Count != rows.Count)
-                    throw new BusinessException("Hiện vật chưa có hợp đồng ký gửi còn hiệu lực.");
                     decimal fallback = RateSetting(db, "DepositRate");
                     foreach (var row in rows)
                     {
                         var item = items.Single(x => x.ItemId == row.ItemId);
+                        // Áp dụng cùng kiểm tra chủ hàng/hợp đồng như thêm lot lẻ.
+                        decimal feeRate = CheckLotItemAndLockFee(db, item, row.ClosesAt);
                         decimal deposit = row.DepositRequired??Math.Round(row.StartingPrice*fallback, 2, MidpointRounding.AwayFromZero);
                         if (deposit<=0m)
                         {
@@ -392,7 +429,8 @@ namespace AuctionArena.Services
                             SessionId = sessionId, ItemId = row.ItemId, 
                             LotNumber = row.LotNumber, StartingPrice = row.StartingPrice, ReservePrice = row.ReservePrice, 
                             BidIncrement = row.BidIncrement, DepositRequired = deposit, CurrentPrice = row.StartingPrice, 
-                            OpensAt = row.OpensAt, ClosesAt = row.ClosesAt, LotStatus = "Planned"
+                            OpensAt = row.OpensAt, ClosesAt = row.ClosesAt, LotStatus = "Planned", 
+                            SellerFeeRateLocked = feeRate
                         });
                     }
                     db.SaveChanges();

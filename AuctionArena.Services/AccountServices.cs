@@ -283,8 +283,8 @@ namespace AuctionArena.Services
             email = (email??"").Trim();
             phone = (phone??"").Trim();
             reason = (reason??"").Trim();
-            if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9_]{3,60}$"))
-            throw new BusinessException("Tên đăng nhập 3–60 ký tự, không dấu và không có khoảng trắng.");
+            if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-zA-Z0-9._-]{3,60}$"))
+            throw new BusinessException("Tên đăng nhập 3–60 ký tự chữ, số, dấu chấm, gạch dưới hoặc gạch nối; không dấu và không có khoảng trắng.");
             if (email.Length>0 && !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
             throw new BusinessException("Email không đúng định dạng.");
             if (phone.Length>0 && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0[0-9]{9}$"))
@@ -330,6 +330,9 @@ namespace AuctionArena.Services
                         throw new BusinessException("Không được đổi tên đăng nhập sau khi tạo.");
                     }
                     bool previousAdmin = id != 0 && db.Roles.Any(r => r.RoleId == u.RoleId && r.RoleCode == "ADMIN");
+                    // Chỉ Admin mới được sửa tài khoản đang thuộc nhóm Admin.
+                    if (previousAdmin && !actorAdmin)
+                    throw new BusinessException("Chỉ quản trị viên mới được sửa tài khoản Admin.");
                     if (previousAdmin && u.IsActive && (!active || !targetAdmin) && 
                     (from u0 in db.Users join r0 in db.Roles on u0.RoleId equals r0.RoleId
                     where u0.IsActive && r0.RoleCode == "ADMIN" select u0.UserId).Count()<=1)
@@ -446,6 +449,7 @@ namespace AuctionArena.Services
                     }
                     if (db.Users.Any(x => x.RoleId == id))throw new BusinessException("Nhóm có thành viên; hãy chuyển nhóm trước.");
                     db.RolePermissions.RemoveRange(db.RolePermissions.Where(x => x.RoleId == id));
+                    db.SaveChanges(); // Xóa quyền trước để không vướng khóa ngoại khi xóa nhóm.
                     db.Roles.Remove(r);
                     Audit(db, actor, "ROLE_DELETE", "Roles", id, "Xóa nhóm trống "+r.RoleCode);
                     db.SaveChanges();
@@ -484,7 +488,15 @@ namespace AuctionArena.Services
                     };
                     db.Roles.Add(r);
                     db.SaveChanges();
-                    foreach (var old in db.RolePermissions.Where(x => x.RoleId == sourceId).ToList())
+                    var copied = db.RolePermissions.Where(x => x.RoleId == sourceId).ToList();
+                    // Người không phải Admin chỉ được nhân bản nhóm có quyền nằm trong quyền của mình.
+                    if (!IsAdmin(db, actor))
+                    {
+                        var own = OwnFlags(db, db.Users.Single(x => x.UserId == actor).RoleId);
+                        if (copied.Any(x => !Allowed(own, x.PermissionId, x.CanView, x.CanCreate, x.CanEdit, x.CanDelete, x.CanPrint)))
+                        throw new BusinessException("Không được nhân bản nhóm có quyền mà chính bạn không có.");
+                    }
+                    foreach (var old in copied)
                     db.RolePermissions.Add(new RolePermissionEntity
                     {
                         RoleId = r.RoleId, PermissionId = old.PermissionId, 
@@ -526,7 +538,12 @@ namespace AuctionArena.Services
                         throw new BusinessException("Tài khoản không còn tồn tại.");
                     }
                     bool targetAdmin = db.Roles.Any(x => x.RoleId == account.RoleId && x.RoleCode == "ADMIN");
-                    if (targetAdmin && account.IsActive && 
+                    bool actorAdmin = (from au in db.Users join ar in db.Roles on au.RoleId equals ar.RoleId
+                    where au.UserId == actor && ar.RoleCode == "ADMIN" select au.UserId).Any();
+                    // Chỉ Admin mới được xóa/khóa tài khoản Admin.
+                    if (targetAdmin && !actorAdmin)
+                    throw new BusinessException("Chỉ quản trị viên mới được xóa/khóa tài khoản Admin.");
+                    if (targetAdmin && account.IsActive &&
                     (from u in db.Users join role in db.Roles on u.RoleId equals role.RoleId
                     where u.IsActive && role.RoleCode == "ADMIN" select u.UserId).Count()<=1)
                     throw new BusinessException("Không được xóa/khóa quản trị viên hoạt động cuối cùng.");
@@ -544,6 +561,7 @@ namespace AuctionArena.Services
                     if (hasHistory)
                     {
                         account.IsActive = false;
+                        account.LockReason = reason; // Lưu lý do khóa như khi khóa qua Sửa.
                         Audit(db, actor, "USER_LOCK_INSTEAD_DELETE", "Users", userId, 
                         "Khóa tài khoản có lịch sử nghiệp vụ. Lý do: "+reason);
                     }
@@ -661,9 +679,23 @@ namespace AuctionArena.Services
                     if (rows.Count != ids.Count || rows.Any(x => !ids.Contains(x.PermissionId)))
                     throw new BusinessException("Danh sách quyền không khớp cơ sở dữ liệu.");
                     var existing = db.RolePermissions.Where(x => x.RoleId == role).ToList();
-                    var before = existing.ToDictionary(x => x.PermissionId, x => 
+                    var before = existing.ToDictionary(x => x.PermissionId, x =>
                     ""+(x.CanView?'1':'0')+(x.CanCreate?'1':'0')+(x.CanEdit?'1':'0')+
                     (x.CanDelete?'1':'0')+(x.CanPrint?'1':'0'));
+                    // Người không phải Admin không được cấp thêm quyền mà chính mình không có.
+                    if (!IsAdmin(db, actor))
+                    {
+                        var own = OwnFlags(db, current.RoleId);
+                        foreach (var row in rows)
+                        {
+                            var old = existing.SingleOrDefault(x => x.PermissionId == row.PermissionId);
+                            bool view = row.CanView || row.CanCreate || row.CanEdit || row.CanDelete || row.CanPrint;
+                            if (!Allowed(own, row.PermissionId, view && (old == null || !old.CanView),
+                            row.CanCreate && (old == null || !old.CanCreate), row.CanEdit && (old == null || !old.CanEdit),
+                            row.CanDelete && (old == null || !old.CanDelete), row.CanPrint && (old == null || !old.CanPrint)))
+                            throw new BusinessException("Không được cấp quyền mà chính bạn không có ("+row.Name+").");
+                        }
+                    }
                     foreach (var row in rows)
                     {
                         var rp = existing.SingleOrDefault(x => x.PermissionId == row.PermissionId);
@@ -703,6 +735,26 @@ namespace AuctionArena.Services
                     throw;
                 }
             }
+        }
+        public bool IsAdmin(int actor) // Kiểm tra người đang thao tác có thuộc nhóm Admin.
+        {
+            using (var db = Factory())return IsAdmin(db, actor);
+        }
+        private static bool IsAdmin(AuctionArenaDbContext db, int actor)
+        {
+            return (from au in db.Users join ar in db.Roles on au.RoleId equals ar.RoleId
+            where au.UserId == actor && ar.RoleCode == "ADMIN" select au.UserId).Any();
+        }
+        private static Dictionary<int, RolePermissionEntity> OwnFlags(AuctionArenaDbContext db, int roleId) // Quyền hiện có của nhóm người thao tác.
+        {
+            return db.RolePermissions.Where(x => x.RoleId == roleId).ToList().ToDictionary(x => x.PermissionId);
+        }
+        private static bool Allowed(Dictionary<int, RolePermissionEntity> own, int permissionId, bool view, bool create, bool edit, bool delete, bool print)
+        { // Cờ quyền yêu cầu phải nằm trong quyền của người thao tác.
+            RolePermissionEntity p;
+            if (!own.TryGetValue(permissionId, out p))
+            return !(view || create || edit || delete || print);
+            return (!view || p.CanView) && (!create || p.CanCreate) && (!edit || p.CanEdit) && (!delete || p.CanDelete) && (!print || p.CanPrint);
         }
     }
     public sealed class RoleOption

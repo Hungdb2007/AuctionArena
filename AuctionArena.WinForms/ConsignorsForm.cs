@@ -139,10 +139,13 @@ namespace AuctionArena.WinForms
         }
         protected override void Save()
         {
+            decimal percentage = 0m;
+            if (!string.IsNullOrWhiteSpace(fee.Text) && !PercentInput.TryParse(fee.Text, out percentage))
+            throw new BusinessException("Phí chủ hàng (%) không hợp lệ.");
             service.SaveConsignor(Actor, new ConsignorEntity
             {
                 ConsignorId = Current == null?0:Current.ConsignorId, ConsignorCode = code.Text, FullName = name.Text, Phone = phone.Text, IdentityNumber = identity.Text, Address = address.Text, BankName = bank.Text, BankAccount = bankAccount.Text, 
-                SellerFeeRate = string.IsNullOrWhiteSpace(fee.Text)?(decimal?)null:Money(fee)/100m, 
+                SellerFeeRate = string.IsNullOrWhiteSpace(fee.Text)?(decimal?)null:percentage/100m, 
                 Email = email.Text, RepresentativeName = representative.Text, BankAccountHolder = accountHolder.Text, 
                 ConsignorType = type.Text, Notes = notes.Text
             });

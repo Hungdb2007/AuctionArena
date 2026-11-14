@@ -302,7 +302,13 @@ namespace AuctionArena.WinForms
             print.Click+=(sender, args) => Theme.Safe(() => 
             {
                 if (current.Count == 0)RefreshRows();
-                if (current.Count>0)ReportForm.OpenBusiness(this, actor, Kind(), current);
+                // Báo cho người dùng thay vì im lặng khi kỳ không có số liệu.
+                if (current.Count == 0)
+                {
+                    MessageBox.Show("Không có dữ liệu để in trong kỳ đã chọn.", "Báo cáo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                ReportForm.OpenBusiness(this, actor, Kind(), current);
             });
             export.Click+=(sender, args) => Theme.Safe(() => 
             {

@@ -55,7 +55,7 @@ namespace AuctionArena.Services
                     {
                         UserId = user.UserId, ActionCode = "INITIAL_ADMIN_CREATED", 
                         EntityName = "Users", EntityId = user.UserId.ToString(), 
-                        Description = "Tạo quản trị viên đầu tiên trên database mới; không lưu mật khẩu.", OccurredAt = DateTime.UtcNow
+                        Description = "Tạo quản trị viên đầu tiên trên database mới; không lưu mật khẩu.", OccurredAt = Now() // Giờ địa phương như các nhật ký khác.
                     });
                     db.SaveChanges();
                     tx.Commit();

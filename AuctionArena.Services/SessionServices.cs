@@ -132,6 +132,27 @@ namespace AuctionArena.Services
         public SessionService(Func<AuctionArenaDbContext> factory = null) : base(factory)
         {
         }
+        // Điều kiện kết thúc phiên, dùng chung cho kiểm tra trước xác nhận và khi đóng phiên.
+        static AuctionSessionEntity VerifyCanClose(AuctionArenaDbContext db, int sessionId)
+        {
+            var session = db.AuctionSessions.Single(x => x.SessionId == sessionId);
+            if (session.SessionStatus != "Open")
+            {
+                throw new BusinessException("Phiên không đang mở.");
+            }
+            if (db.AuctionLots.Any(x => x.SessionId == sessionId && (x.LotStatus == "Open" || x.LotStatus == "Planned")))
+            throw new BusinessException("Còn lot chưa chốt, không thể kết thúc phiên.");
+            return session;
+        }
+        // Chỉ đọc: báo lỗi trước khi hỏi xác nhận kết thúc phiên.
+        public void CheckCanCloseSession(int actor, int sessionId)
+        {
+            using (var db = Factory())
+            {
+                SecurityService.Require(db, actor, "SESSIONS", "Edit");
+                VerifyCanClose(db, sessionId);
+            }
+        }
         public void CloseSession(int actor, int sessionId) //Đóng phiên sau kiểm tra điều kiện(135-179)
         {
             using (var db = Factory())
@@ -140,13 +161,7 @@ namespace AuctionArena.Services
                 try
                 {
                     SecurityService.Require(db, actor, "SESSIONS", "Edit");
-                    var session = db.AuctionSessions.Single(x => x.SessionId == sessionId);
-                    if (session.SessionStatus != "Open")
-                    {
-                        throw new BusinessException("Phiên không đang mở.");
-                    }
-                    if (db.AuctionLots.Any(x => x.SessionId == sessionId && (x.LotStatus == "Open" || x.LotStatus == "Planned")))
-                    throw new BusinessException("Còn lot chưa chốt, không thể kết thúc phiên.");
+                    var session = VerifyCanClose(db, sessionId);
                     session.SessionStatus = "Closed";
                     // Tạo nghĩa vụ phải hoàn cho khách không thắng; chưa ghi nhận đã chi tiền.
                     var winners = db.AuctionLots.Where(x => x.SessionId == sessionId && x.LotStatus == "Sold" && 

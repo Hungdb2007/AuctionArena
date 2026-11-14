@@ -162,4 +162,17 @@ namespace AuctionArena.Services
             set;
         }
     }
+    public static class PercentInput
+    {
+        // Nhận cả "5,5" và "5.5", không phụ thuộc vùng của Windows.
+        public static bool TryParse(string input, out decimal value)
+        {
+            value = 0m;
+            string text = (input ?? "").Trim();
+            if (!System.Text.RegularExpressions.Regex.IsMatch(text, @"^[0-9]+([.,][0-9]+)?$"))
+                return false;
+            return decimal.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture, out value);
+        }
+    }
 }

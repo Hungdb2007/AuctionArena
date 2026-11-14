@@ -149,7 +149,7 @@ namespace AuctionArena.WinForms
                     var no = Theme.Button("Hủy", 230, 162, 160); no.DialogResult = DialogResult.Cancel; dlg.Controls.Add(no);
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        int id = svc.CloneRole(actor, target.Id, c.Text, n.Text); LoadRoles(id);
+                        int id = svc.CloneRole(actor, target.Id, c.Text, n.Text); LoadRoles(id); MessageBox.Show("Đã nhân bản nhóm quyền.");
                     }
                 }
             });
@@ -160,7 +160,7 @@ namespace AuctionArena.WinForms
                 {
                     return;
                 }
-                svc.DeleteRole(actor, target.Id); dirty = false; LoadRoles(0);
+                svc.DeleteRole(actor, target.Id); dirty = false; LoadRoles(0); MessageBox.Show("Đã xóa nhóm quyền.");
             });
             members.Click+=(s, e) => Theme.Safe(() => 
             {

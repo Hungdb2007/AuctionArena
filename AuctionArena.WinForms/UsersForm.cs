@@ -49,6 +49,9 @@ namespace AuctionArena.WinForms
                 BackColor = Theme.Bg
             };
             tabs.TabPages.Add(history);
+            // Đặt đúng kích thước trang trước khi thêm control để Anchor không kéo lưới tràn ra ngoài.
+            users.Size = tabs.DisplayRectangle.Size;
+            history.Size = tabs.DisplayRectangle.Size;
             users.Controls.Add(Theme.Label("Tìm tên đăng nhập / họ tên / email", 20, 14, 340));
             search = Theme.Input(20, 44, 315);
             users.Controls.Add(search);
@@ -69,7 +72,7 @@ namespace AuctionArena.WinForms
             users.Controls.Add(stateFilter);
             var find = Theme.Button("Tìm / tải lại", 780, 39, 160);
             users.Controls.Add(find);
-            grid = Theme.Grid(20, 93, 1015, 255);
+            grid = Theme.Grid(20, 93, users.ClientSize.Width-40, 255);
             grid.Anchor = AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;
             users.Controls.Add(grid);
             username = Make(users, "Tên đăng nhập", 20, 368, 220);
@@ -102,7 +105,7 @@ namespace AuctionArena.WinForms
             delete = Theme.Button("Xóa / khóa", 600, 548, 165);
             users.Controls.Add(delete);
             var reset = Theme.Button("Đặt lại mật khẩu", 780, 548, 230);
-            reset.Enabled = rights.Edit;
+            reset.Enabled = rights.Edit && service.IsAdmin(actor); // Chỉ Admin mới được đặt lại mật khẩu.
             users.Controls.Add(reset);
             var export = Theme.Button("Xuất Excel", 20, 604, 175);
             users.Controls.Add(export);
@@ -289,7 +292,7 @@ namespace AuctionArena.WinForms
             history.Controls.Add(loadLog);
             var excelLog = Theme.Button("Xuất Excel", 850, 43, 165);
             history.Controls.Add(excelLog);
-            logs = Theme.Grid(20, 105, 1000, 550);
+            logs = Theme.Grid(20, 105, history.ClientSize.Width-40, history.ClientSize.Height-125);
             logs.Anchor = AnchorStyles.Top|AnchorStyles.Bottom|AnchorStyles.Left|AnchorStyles.Right;
             history.Controls.Add(logs);
             loadLog.Click+=(s, e) => Theme.Safe(() => logs.DataSource = service.UserAudit(actor, null, action.Text, from.Value, to.Value));
@@ -365,7 +368,13 @@ namespace AuctionArena.WinForms
                 no.DialogResult = DialogResult.Cancel;
                 f.AcceptButton = ok;
                 f.CancelButton = no;
-                return f.ShowDialog() == DialogResult.OK && input.Text.Trim().Length>=5?input.Text.Trim():null;
+                if (f.ShowDialog() != DialogResult.OK)return null;
+                if (input.Text.Trim().Length<5)
+                {
+                    MessageBox.Show("Lý do cần từ 5 ký tự.", "Thiếu lý do", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return null;
+                }
+                return input.Text.Trim();
             }
         }
         void Fail(Control target, string error)

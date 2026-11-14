@@ -130,8 +130,11 @@ namespace AuctionArena.Services
                         "PendingAppraisal", "NeedInfo", "Approved", "InStock"
                     }.Contains(item.ItemStatus))
                     throw new BusinessException("Hiện vật đang đấu giá/đã giao: không đổi ảnh chính.");
-                    foreach (var image in db.ItemImages.Where(x => x.ItemId == photo.ItemId).ToList())
-                    image.IsPrimary = image.ItemImageId == imageId;
+                    // Bỏ ảnh chính cũ và lưu trước để không vi phạm UX_ItemImages_Primary.
+                    foreach (var image in db.ItemImages.Where(x => x.ItemId == photo.ItemId && x.IsPrimary && x.ItemImageId != imageId).ToList())
+                    image.IsPrimary = false;
+                    db.SaveChanges();
+                    photo.IsPrimary = true;
                     Audit(db, actor, "ITEM_IMAGE_PRIMARY", "Items", item.ItemId, "Chọn ảnh chính #"+imageId);
                     db.SaveChanges();
                     tx.Commit();
@@ -162,10 +165,14 @@ namespace AuctionArena.Services
                     item.ItemStatus != "Approved" && item.ItemStatus != "InStock")
                     throw new BusinessException("Không được xóa ảnh hiện vật đã đấu giá.");
                     path = FilePath(photo.RelativePath);
+                    bool wasPrimary = photo.IsPrimary;
+                    int itemId = photo.ItemId;
                     db.ItemImages.Remove(photo);
-                    if (photo.IsPrimary)
+                    if (wasPrimary)
                     {
-                        var replacement = db.ItemImages.Where(x => x.ItemId == photo.ItemId && x.ItemImageId != imageId)
+                        // Xóa ảnh chính cũ trước, sau đó mới đặt ảnh thay thế (tránh trùng chỉ mục duy nhất).
+                        db.SaveChanges();
+                        var replacement = db.ItemImages.Where(x => x.ItemId == itemId)
                         .OrderBy(x => x.ItemImageId).FirstOrDefault();
                         if (replacement != null) replacement.IsPrimary = true;
                     }

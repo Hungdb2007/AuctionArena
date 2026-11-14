@@ -174,7 +174,12 @@ namespace AuctionArena.Services
                     lot.LeadingCustomerId = customerId;
                     int extension = checked((int)Setting(db, "AntiSnipingSeconds"));
                     if (extension > 0 && (lot.ClosesAt - now).TotalSeconds <= extension)
-                    lot.ClosesAt = now.AddSeconds(extension);
+                    {
+                        // Gia hạn chống bắn tỉa nhưng không vượt quá giờ kết thúc phiên.
+                        DateTime extended = now.AddSeconds(extension);
+                        if (extended > session.EndsAt) extended = session.EndsAt;
+                        if (extended > lot.ClosesAt) lot.ClosesAt = extended;
+                    }
                     Audit(db, actor, "BID", "AuctionLots", lotId, "Ghi giá trả " + amount.ToString("N0"));
                     db.SaveChanges();
                     // Dùng RowVersion để phát hiện lô vừa được máy khác cập nhật.
@@ -371,11 +376,12 @@ namespace AuctionArena.Services
         // Chỉ thu muộn khi chưa có quyết định tịch thu tiền cọc.
         // Không thu muộn với hóa đơn đã xử lý vi phạm hoặc điều chỉnh.
         // Ghi lại lý do và người duyệt khoản thanh toán quá hạn.
-        public void PayLateInvoiceWithApproval(int actor, int invoiceId, decimal amount, string method, string approvalReason)
+        public void PayLateInvoiceWithApproval(int actor, int invoiceId, decimal amount, string method, string approvalReason, string bankReference = null)
         { //Thu quá hạn qua luồng có phê duyệt và lý do(374-440)
             ValidateMoney(amount);
             if (method != "Cash" && method != "BankTransfer")
             throw new BusinessException("Hình thức thu không hợp lệ.");
+            bankReference = CheckBankReference(method, bankReference);
             approvalReason = (approvalReason ?? "").Trim();
             if (approvalReason.Length < 10 || approvalReason.Length > 180)
             throw new BusinessException("Cần ghi nội dung phê duyệt thu trễ từ 10 đến 180 ký tự (mã biên bản/người phê duyệt).");
@@ -403,6 +409,8 @@ namespace AuctionArena.Services
                     throw new BusinessException("Tổng phiếu thu không khớp hóa đơn, cần đối soát trước khi tiếp tục.");
                     if (amount > invoice.TotalDue - invoice.PaidAmount)
                     throw new BusinessException("Số tiền lớn hơn công nợ còn lại.");
+                    if (method == "BankTransfer" && db.Payments.Any(p => p.TransactionReference == bankReference))
+                    throw new BusinessException("Mã tham chiếu đã được sử dụng ở chứng từ thanh toán khác.");
                     // Thanh toán bổ sung không thay đổi hạn gốc của hóa đơn.
                     invoice.PaidAmount += amount;
                     invoice.InvoiceStatus = invoice.PaidAmount == invoice.TotalDue ? "Paid" : "PartiallyPaid";
@@ -418,7 +426,8 @@ namespace AuctionArena.Services
                     db.Payments.Add(new PaymentEntity
                     {
                         PaymentCode = Code("PT"), InvoiceId = invoiceId, 
-                        PaymentType = "Invoice", Amount = amount, PaymentMethod = method, PaidAt = Now(), 
+                        PaymentType = "Invoice", Amount = amount, PaymentMethod = method,
+                        TransactionReference = method == "BankTransfer"?bankReference:null, PaidAt = Now(),
                         ReceivedByUserId = actor, Notes = "Thu trễ hạn có phê duyệt: " + approvalReason
                     });
                     Audit(db, actor, "LATE_INVOICE_PAYMENT", "Invoices", invoiceId, 
@@ -438,13 +447,9 @@ namespace AuctionArena.Services
                 }
             }
         }
-        public void PayInvoice(int actor, int invoiceId, decimal amount, string method, string bankReference = null)
-        { //Thu hóa đơn, chặn thu vượt và trùng tham chiếu(441-502).
-            ValidateMoney(amount);
-            if (method != "Cash" && method != "BankTransfer")
-            {
-                throw new BusinessException("Phương thức thanh toán không hợp lệ.");
-            }
+        // Dùng chung cho thu thường và thu trễ: chuyển khoản phải có mã tham chiếu, tiền mặt thì không.
+        static string CheckBankReference(string method, string bankReference)
+        {
             bankReference = (bankReference??"").Trim();
             if (method == "BankTransfer" && (bankReference.Length<5 || bankReference.Length>100))
             throw new BusinessException("Thu qua ngân hàng cần mã tham chiếu giao dịch 5–100 ký tự.");
@@ -452,6 +457,16 @@ namespace AuctionArena.Services
             {
                 throw new BusinessException("Tiền mặt không dùng mã chuyển khoản.");
             }
+            return bankReference;
+        }
+        public void PayInvoice(int actor, int invoiceId, decimal amount, string method, string bankReference = null)
+        { //Thu hóa đơn, chặn thu vượt và trùng tham chiếu(441-502).
+            ValidateMoney(amount);
+            if (method != "Cash" && method != "BankTransfer")
+            {
+                throw new BusinessException("Phương thức thanh toán không hợp lệ.");
+            }
+            bankReference = CheckBankReference(method, bankReference);
             using (var db = Factory())
             using (var tx = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
             {
@@ -709,7 +724,9 @@ namespace AuctionArena.Services
                     {
                         throw new BusinessException("Một số lot đã bị xóa hoặc không tồn tại.");
                     }
-                    var items = db.Items.Where(x => lots.Select(l => l.ItemId).Contains(x.ItemId)).ToList();
+                    // Lấy danh sách mã hiện vật trước; EF không dịch được danh sách thực thể trong bộ nhớ.
+                    var itemIds = lots.Select(l => l.ItemId).ToList();
+                    var items = db.Items.Where(x => itemIds.Contains(x.ItemId)).ToList();
                     foreach (var lot in lots)
                     {
                         if (lot.LotStatus != "Sold" || !lot.HammerPrice.HasValue || !lot.SellerFeeRateLocked.HasValue)
@@ -942,6 +959,13 @@ namespace AuctionArena.Services
                     db.Items.Any(x => ids.Contains(x.ItemId) && x.ItemStatus != "Sold") || 
                     db.StockIssueDetails.Any(x => ids.Contains(x.ItemId)))
                     throw new BusinessException("Hiện vật đã xuất hoặc không còn hợp lệ.");
+                    // Nháp chỉ lưu hiện vật trong DraftPayload: đọc các nháp đang mở của hóa đơn để chặn trùng.
+                    var openPayloads = db.StockIssues.Where(x => x.InvoiceId == invoiceId && x.WorkflowStatus == "Draft" &&
+                    x.DraftPayload != null).Select(x => x.DraftPayload).ToList();
+                    var draftItemIds = openPayloads.SelectMany(p => System.Xml.Linq.XElement.Parse(p).Elements("Item")
+                    .Select(x => (int)x.Attribute("Id"))).ToList();
+                    if (ids.Any(x => draftItemIds.Contains(x)))
+                    throw new BusinessException("Hiện vật đã nằm trong một phiếu xuất nháp khác. Hãy xác nhận hoặc hủy nháp đó trước.");
                     var header = new StockIssueEntity
                     {
                         InvoiceId = invoiceId, IssueCode = Code("XN"), 

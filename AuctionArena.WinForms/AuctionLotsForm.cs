@@ -58,6 +58,7 @@ namespace AuctionArena.WinForms
             batch.Width = 185;
             var renumber = Action("Đánh lại số lot", 610, 690, flags.Edit, () => 
             {
+                Manager.CheckRenumberPlannedLots(Actor, sessionId); // Báo lỗi điều kiện trước khi hỏi xác nhận
                 if (MessageBox.Show("Đánh lại số lot liên tục từ 1?", "Xác nhận", MessageBoxButtons.YesNo, 
                 MessageBoxIcon.Question) != DialogResult.Yes)return;
                 Manager.RenumberPlannedLots(Actor, sessionId);

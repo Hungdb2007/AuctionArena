@@ -56,7 +56,7 @@ namespace AuctionArena.WinForms
             };
             Controls.Add(from);
             Controls.Add(to);
-            Action("Xem lịch sử", 650, 531, Flags.View, Reload);
+            Action("Xem lịch sử", 650, 531, Flags.View, () => { }); // Action tự gọi Reload sau callback, tránh tải/báo lỗi hai lần
             auto = new CheckBox
             {
                 Text = "Tự làm mới 2 giây", Left = 20, Top = 598, Width = 210, 
@@ -70,6 +70,8 @@ namespace AuctionArena.WinForms
             };
             autoRefresh.Tick+=(s, e) => 
             {
+                // Tự làm mới bỏ qua im lặng khi khoảng ngày sai, chỉ báo lỗi khi người dùng bấm xem.
+                if (useDate.Checked && from.Value.Date>to.Value.Date) return;
                 if (!IsDisposed && Visible)Reload();
             };
             FormClosed+=(s, e) => //Dispose: Giải phóng component/tài nguyên khi đóng Form
@@ -173,7 +175,23 @@ namespace AuctionArena.WinForms
             {
                 var rows = Manager.SearchBidHistory(Actor, Selected(sessions), Selected(lots), Selected(customers), 
                 useDate.Checked?(DateTime?)from.Value.Date:null, useDate.Checked?(DateTime?)to.Value.Date:null);
+                // Giữ dòng đang chọn (theo BidId) và vị trí cuộn khi làm mới.
+                var current = Grid.CurrentRow == null?null:Grid.CurrentRow.DataBoundItem as BidHistoryRow;
+                long? keepBidId = current == null?(long?)null:current.BidId;
+                int firstRow = Grid.FirstDisplayedScrollingRowIndex;
                 Grid.DataSource = rows;
+                if (keepBidId.HasValue)
+                {
+                    int index = rows.FindIndex(x => x.BidId == keepBidId.Value);
+                    if (index>=0 && Grid.Columns.Count>0)
+                    {
+                        var cell = Grid.Rows[index].Cells.Cast<DataGridViewCell>().FirstOrDefault(x => x.Visible);
+                        if (cell != null) Grid.CurrentCell = cell;
+                    }
+                }
+                // Khôi phục vị trí cuộn sau khi chọn lại dòng (chọn dòng có thể làm lưới tự cuộn).
+                if (firstRow>=0 && Grid.Rows.Count>0)
+                Grid.FirstDisplayedScrollingRowIndex = Math.Min(firstRow, Grid.Rows.Count-1);
                 summary.Text = "Lượt trả giá: "+rows.Count+"  |  Cao nhất: "+
                 (rows.Count>0?rows.Max(x => x.Amount).ToString("N0")+" đ":"—");
             });

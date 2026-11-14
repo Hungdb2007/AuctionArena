@@ -16,6 +16,7 @@ namespace AuctionArena.WinForms
         readonly DateTimePicker dob;
         readonly TextBox notes, blackReason;
         byte[] selectedPhoto;
+        readonly Button browse;
         readonly PictureBox preview = new PictureBox
         {
             Left = 812, Top = 600, Width = 190, Height = 125, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Theme.Panel
@@ -40,9 +41,9 @@ namespace AuctionArena.WinForms
             Controls.Add(black);
             address = Field("Địa chỉ liên hệ", 18, 590, 620);
             photo = Field("Đường dẫn ảnh khách (tùy chọn)", 18, 674, 620);
-            var browse = Theme.Button("Chọn ảnh", 650, 700, 150);
+            browse = Theme.Button("Chọn ảnh", 650, 700, 150);
             Controls.Add(browse);
-            browse.Enabled = flags.Edit;
+            browse.Enabled = false;
             browse.Click+=(s, e) => Theme.Safe(() => 
             {
                 using (var dialog = new OpenFileDialog
@@ -56,40 +57,30 @@ namespace AuctionArena.WinForms
                     }
                     if (new System.IO.FileInfo(dialog.FileName).Length>2*1024*1024)
                     throw new BusinessException("Ảnh khách hàng tối đa 2 MB.");
-                    selectedPhoto = System.IO.File.ReadAllBytes(dialog.FileName);
-                    using (var ms = new System.IO.MemoryStream(selectedPhoto))using (var check = Image.FromStream(ms))
+                    // Kiểm tra ảnh trước khi nhận; ảnh lỗi thì giữ nguyên ảnh cũ.
+                    var bytes = System.IO.File.ReadAllBytes(dialog.FileName);
+                    try
                     {
-                        if (check.Width<1 || check.Height<1)
+                        using (var ms = new System.IO.MemoryStream(bytes))using (var check = Image.FromStream(ms))
                         {
-                            throw new BusinessException("Ảnh không hợp lệ.");
+                            if (check.Width<1 || check.Height<1)
+                            {
+                                throw new ArgumentException();
+                            }
                         }
                     }
+                    catch (Exception)
+                    {
+                        throw new BusinessException("File đã chọn không phải ảnh hợp lệ. Giữ nguyên ảnh cũ.");
+                    }
+                    selectedPhoto = bytes;
                     photo.Text = dialog.FileName;
+                    ShowPreview();
                 }
             });
             Controls.Add(preview);
             ReadOnlyAlways(photo);
-            photo.TextChanged+=(s, e) => 
-            {
-                if (preview.Image != null)
-                {
-                    var previous = preview.Image;
-                    preview.Image = null;
-                    previous.Dispose();
-                }
-                try
-                {
-                    if (selectedPhoto != null)
-                    {
-                        using (var ms = new System.IO.MemoryStream(selectedPhoto))
-                        using (var img = Image.FromStream(ms))preview.Image = new Bitmap(img);
-                    }
-                }
-                catch
-                {
-                    // Ảnh không hợp lệ không được làm hỏng hồ sơ khách.
-                }
-            };
+            photo.TextChanged+=(s, e) => ShowPreview();
             dob = new DateTimePicker
             {
                 Left = 18, Top = 814, Width = 195, Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false
@@ -227,6 +218,35 @@ namespace AuctionArena.WinForms
             {
                 if (preview.Image != null)preview.Image.Dispose();
             };
+            // Mở từ lịch sử đặt giá: lọc sẵn theo khách đã chọn.
+            if (!string.IsNullOrWhiteSpace(presetSearch))Search.Text = presetSearch.Trim();
+        }
+        void ShowPreview()
+        {
+            if (preview.Image != null)
+            {
+                var previous = preview.Image;
+                preview.Image = null;
+                previous.Dispose();
+            }
+            try
+            {
+                if (selectedPhoto != null)
+                {
+                    using (var ms = new System.IO.MemoryStream(selectedPhoto))
+                    using (var img = Image.FromStream(ms))preview.Image = new Bitmap(img);
+                }
+            }
+            catch
+            {
+                // Ảnh không hợp lệ không được làm hỏng hồ sơ khách.
+            }
+        }
+        // Chỉ chọn ảnh khi đang thêm mới/sửa; ngoài chế độ sửa ảnh sẽ không được lưu.
+        protected override void OnModeChanged(bool isEditing)
+        {
+            if (browse == null) return;
+            browse.Enabled = isEditing && SaveButton.Enabled;
         }
         protected override object Fetch(string q)
         {
@@ -251,14 +271,7 @@ namespace AuctionArena.WinForms
             if (x.DateOfBirth.HasValue)dob.Value = x.DateOfBirth.Value;
             selectedPhoto = x.PhotoData;
             photo.Text = x.PhotoData != null?"Ảnh đã lưu trong SQL":(x.PhotoPath??"");
-            if (preview.Image != null)
-            {
-                var old = preview.Image;
-                preview.Image = null;
-                old.Dispose();
-            }
-            if (selectedPhoto != null)using (var stream = new System.IO.MemoryStream(selectedPhoto))
-            using (var image = Image.FromStream(stream))preview.Image = new Bitmap(image);
+            ShowPreview();
         }
         protected override void Clear()
         {
@@ -268,8 +281,9 @@ namespace AuctionArena.WinForms
             email.Clear();
             identity.Clear();
             address.Clear();
-            photo.Clear();
             selectedPhoto = null;
+            photo.Clear();
+            ShowPreview();
             tier.SelectedIndex = 0;
             black.Checked = false;
             notes.Clear();

@@ -16,6 +16,8 @@ namespace AuctionArena.WinForms
         readonly Label appraisalHint;
         decimal? minFilter, maxFilter;
         int? presetCategory;
+        List<CategorieEntity> allCategories;
+        List<ConsignorEntity> allOwners;
         public ItemsForm(int actor, PermissionFlags flags, int? selectedCategory = null):base("Hiện vật và thẩm định", actor, flags)
         {
             // Lọc danh sách hiện vật theo loại đã được truyền vào từ màn Loại hiện vật.
@@ -228,10 +230,12 @@ namespace AuctionArena.WinForms
             });
             Shown+=(s, e) => Theme.Safe(() => 
             {
-                category.DataSource = service.Categories(Actor, "", "ITEMS", true);
-                category.DisplayMember = "CategoryName"; category.ValueMember = "CategoryId";
-                owner.DataSource = service.ConsignorOptions(Actor, "ITEMS"); owner.DisplayMember = "FullName"; owner.ValueMember = "ConsignorId";
                 var categories = service.Categories(Actor, "", "ITEMS");
+                allCategories = categories;
+                allOwners = service.ConsignorOptions(Actor, "ITEMS", true);
+                category.DisplayMember = "CategoryName"; category.ValueMember = "CategoryId";
+                owner.DisplayMember = "FullName"; owner.ValueMember = "ConsignorId";
+                BindChoices(0, 0);
                 categoryFilter.Items.Add(new FilterOption
                 {
                     Id = 0, Name = "Tất cả loại"
@@ -315,8 +319,16 @@ namespace AuctionArena.WinForms
             (int?)((FilterOption)ownerFilter.SelectedItem).Id:null, 
             statusFilter.SelectedIndex<=0?null:statusFilter.Text, minFilter, maxFilter);
         }
+        // Danh sách chọn chỉ gồm loại/chủ hàng đang hoạt động, cộng thêm loại/chủ hàng hiện tại của hiện vật.
+        void BindChoices(int categoryId, int consignorId)
+        {
+            if (allCategories == null || allOwners == null) return;
+            category.DataSource = allCategories.Where(c => c.IsActive || c.CategoryId == categoryId).ToList();
+            owner.DataSource = allOwners.Where(o => o.ConsignorStatus != "Inactive" || o.ConsignorId == consignorId).ToList();
+        }
         protected override void Fill(ItemEntity x)
         {
+            BindChoices(x.CategoryId, x.ConsignorId);
             code.Text = x.ItemCode;
             name.Text = x.ItemName;
             price.Text = x.EstimatePrice.ToString("0.##");
@@ -335,6 +347,7 @@ namespace AuctionArena.WinForms
         }
         protected override void Clear()
         {
+            BindChoices(0, 0);
             foreach (var t in new[]
             {
                 code, name, price, appraisal, description, origin, condition, location, era, dimensions, material, highPrice, appraisalNotes
