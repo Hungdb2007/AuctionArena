@@ -23,13 +23,13 @@ namespace AuctionArena.WinForms
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             Controls.Add(layout);
-            var bar = Create("Phí người mua đã thu theo tháng (không VAT)", SeriesChartType.Column);
+            var bar = Create("Phí người mua đã thu theo tháng (không VAT)", "Phí người mua", SeriesChartType.Column);
             foreach (var m in data.Months)
             bar.Series[0].Points.AddXY(m.Month.ToString("00")+"/"+m.Year, m.Revenue);
-            var pie = Create("Tỷ trọng giá búa theo loại hiện vật", SeriesChartType.Pie);
+            var pie = Create("Tỷ trọng giá búa theo loại hiện vật", "Giá búa", SeriesChartType.Pie);
             foreach (var category in data.Categories.Where(x => x.Amount>0))
             pie.Series[0].Points.AddXY(category.Category, category.Amount);
-            var top = Create("5 lot có giá búa cao nhất", SeriesChartType.Bar);
+            var top = Create("5 lot có giá búa cao nhất", "Giá búa", SeriesChartType.Bar);
             foreach (var lot in data.TopLots)
             top.Series[0].Points.AddXY(lot.Item, lot.Price);
             layout.Controls.Add(bar, 0, 0);
@@ -48,7 +48,7 @@ namespace AuctionArena.WinForms
                 empty.BringToFront();
             }
         }
-        static Chart Create(string title, SeriesChartType type)
+        static Chart Create(string title, string seriesName, SeriesChartType type)
         {
             var chart = new Chart
             {
@@ -63,9 +63,10 @@ namespace AuctionArena.WinForms
             {
                 ForeColor = Theme.Text, Font = new Font("Segoe UI", 10, FontStyle.Bold)
             });
-            var series = new Series("Dữ liệu")
+            var series = new Series(seriesName)
             {
-                ChartType = type, IsValueShownAsLabel = true, 
+                // Số tiền có phân cách hàng nghìn cho dễ đọc.
+                ChartType = type, IsValueShownAsLabel = true, LabelFormat = "#,##0",
                 LabelForeColor = Theme.Text
             };
             chart.Series.Add(series);
@@ -75,6 +76,7 @@ namespace AuctionArena.WinForms
             });
             chart.ChartAreas[0].AxisX.LabelStyle.ForeColor = Theme.Muted;
             chart.ChartAreas[0].AxisY.LabelStyle.ForeColor = Theme.Muted;
+            chart.ChartAreas[0].AxisY.LabelStyle.Format = "#,##0";
             chart.ChartAreas[0].AxisX.MajorGrid.Enabled = false;
             chart.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.FromArgb(219, 229, 239);
             return chart;

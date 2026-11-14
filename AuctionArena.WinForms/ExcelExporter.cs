@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -28,6 +29,21 @@ namespace AuctionArena.WinForms
             w.WriteStartElement(element);
             w.WriteString(content??"");
             w.WriteEndElement();
+        }
+        static bool IsNumber(object value)
+        {
+            return value is decimal || value is double || value is float || value is int || value is long || value is short;
+        }
+        // Ngày lấy theo định dạng của bảng (dd/MM/yyyy HH:mm); số giữ nguyên giá trị.
+        static object CellValue(DataGridViewCell cell)
+        {
+            var value = cell.Value;
+            if (value is DateTime)
+            {
+                string format = cell.OwningColumn.DefaultCellStyle.Format;
+                return ((DateTime)value).ToString(string.IsNullOrEmpty(format) ? Theme.DateTimeFormat : format);
+            }
+            return value;
         }
         public static void Export(DataGridView grid)
         {
@@ -73,21 +89,33 @@ namespace AuctionArena.WinForms
                     Part(zip, "xl/worksheets/sheet1.xml", w => 
                     {
                         w.WriteStartDocument(); w.WriteStartElement("worksheet", "http://schemas.openxmlformats.org/spreadsheetml/2006/main"); w.WriteStartElement("sheetData");
-                        var cols = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible && c.ValueType != typeof(byte[])).ToArray();
+                        // Cột theo đúng thứ tự và tiêu đề tiếng Việt đang hiển thị trên bảng.
+                        var cols = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible && c.ValueType != typeof(byte[]))
+                        .OrderBy(c => c.DisplayIndex).ToArray();
                         int row = 0;
-                        Action<string[]> add = values => 
+                        Action<object[]> add = values =>
                         {
                             w.WriteStartElement("row"); w.WriteAttributeString("r", (++row).ToString());
                             foreach (var value in values)
                             {
-                                w.WriteStartElement("c"); w.WriteAttributeString("t", "inlineStr"); w.WriteStartElement("is"); Txt(w, "t", value); w.WriteEndElement(); w.WriteEndElement();
+                                w.WriteStartElement("c");
+                                if (IsNumber(value))
+                                {
+                                    // Số giữ dạng số để Excel còn tính tổng/sắp xếp được.
+                                    Txt(w, "v", Convert.ToString(value, CultureInfo.InvariantCulture));
+                                }
+                                else
+                                {
+                                    w.WriteAttributeString("t", "inlineStr"); w.WriteStartElement("is"); Txt(w, "t", Convert.ToString(value)); w.WriteEndElement();
+                                }
+                                w.WriteEndElement();
                             }
                             w.WriteEndElement();
                         };
-                        add(cols.Select(x => x.HeaderText).ToArray());
+                        add(cols.Select(x => (object)x.HeaderText).ToArray());
                         foreach (DataGridViewRow r in grid.Rows)
                         {
-                            if (!r.IsNewRow)add(cols.Select(x => Convert.ToString(r.Cells[x.Index].Value)).ToArray());
+                            if (!r.IsNewRow)add(cols.Select(x => CellValue(r.Cells[x.Index])).ToArray());
                         }
                         w.WriteEndElement(); w.WriteEndElement();
                     });

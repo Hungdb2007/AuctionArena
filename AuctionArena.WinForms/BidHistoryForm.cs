@@ -158,6 +158,7 @@ namespace AuctionArena.WinForms
                     Dock = DockStyle.Fill
                 };
                 chart.ChartAreas.Add(new System.Windows.Forms.DataVisualization.Charting.ChartArea("Giá đấu"));
+                chart.ChartAreas[0].AxisY.LabelStyle.Format = "#,##0";
                 var series = new System.Windows.Forms.DataVisualization.Charting.Series("Giá trả")
                 {
                     ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line, 

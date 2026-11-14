@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 namespace AuctionArena.WinForms
@@ -199,6 +200,7 @@ namespace AuctionArena.WinForms
             return;
             string name = ((column.DataPropertyName ?? "") + " " +
             (column.HeaderText ?? "")).ToLowerInvariant();
+            FormatColumn(column);
             int width = 150;
             if (name.Contains("description") || name.Contains("mô tả") || name.Contains("ghi chú"))
             width = 270;
@@ -216,9 +218,157 @@ namespace AuctionArena.WinForms
             // Những bảng khai báo cột bằng tay giữ đúng độ rộng do Form đã đặt.
             if (column.DataGridView != null && !column.DataGridView.AutoGenerateColumns)
             width = column.Width;
+            else
+            {
+                // Tiêu đề tiếng Việt dài hơn tên thuộc tính: nới cột vừa đủ để không bị cắt chữ.
+                int need = TextRenderer.MeasureText(column.HeaderText ?? "", HeaderFont).Width + 18;
+                if (need > width)
+                width = need;
+            }
             column.Width = width;
             column.Tag = "AA_FixedWidth";
         }
+        private static readonly Font HeaderFont = new Font("Segoe UI", 10, FontStyle.Bold);
+        // Tiền: phân cách hàng nghìn, bỏ phần lẻ .00 (1000000.00 -> 1,000,000). Dùng culture hiện tại như N0 ở các nhãn.
+        public const string MoneyFormat = "#,##0.##";
+        public const string DateTimeFormat = "dd/MM/yyyy HH:mm";
+        public const string DateFormat = "dd/MM/yyyy";
+        // Cột chỉ lưu ngày (không có giờ).
+        private static readonly string[] DateOnlyColumns = { "DateOfBirth", "ExpiresAt" };
+        // Định dạng số/ngày và đổi tiêu đề tiếng Việt cho cột tự sinh; cột Form đã tự đặt thì giữ nguyên.
+        private static void FormatColumn(DataGridViewColumn column)
+        {
+            string property = string.IsNullOrEmpty(column.DataPropertyName) ? column.Name : column.DataPropertyName;
+            if (string.IsNullOrEmpty(property))
+            return;
+            string vietnamese;
+            if ((column.HeaderText == property || column.HeaderText == column.Name) &&
+                Headers.TryGetValue(property, out vietnamese))
+            column.HeaderText = vietnamese;
+            if (!string.IsNullOrEmpty(column.DefaultCellStyle.Format) || column.ValueType == null)
+            return;
+            var type = Nullable.GetUnderlyingType(column.ValueType) ?? column.ValueType;
+            if (type == typeof(decimal) || type == typeof(double) || type == typeof(float))
+            {
+                // SuccessRate đã là số phần trăm (0-100); các Rate khác lưu dạng 0.08 = 8%.
+                if (property == "SuccessRate" || property.EndsWith("Percent"))
+                column.DefaultCellStyle.Format = "0.##'%'";
+                else if (property.Contains("Rate"))
+                column.DefaultCellStyle.Format = "0.##%";
+                else
+                column.DefaultCellStyle.Format = MoneyFormat;
+                column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+            else if (type == typeof(DateTime))
+            {
+                column.DefaultCellStyle.Format = Array.IndexOf(DateOnlyColumns, property) >= 0 ? DateFormat : DateTimeFormat;
+            }
+        }
+        // Tên thuộc tính -> tiêu đề cột tiếng Việt. Tên không có trong bảng thì giữ nguyên.
+        private static readonly Dictionary<string, string> Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Số định danh (Id) ghi "ID ..." để không trùng với cột Mã (Code).
+            { "Id", "ID" }, { "Code", "Mã" }, { "UserId", "ID tài khoản" }, { "RoleId", "ID nhóm" }, { "PermissionId", "ID quyền" },
+            { "CustomerId", "ID khách" }, { "ConsignorId", "ID chủ hàng" }, { "CategoryId", "ID danh mục" }, { "ItemId", "ID hiện vật" },
+            { "ItemImageId", "ID ảnh" }, { "ContractId", "ID hợp đồng" }, { "ContractDetailId", "ID dòng HĐ" },
+            { "ReceiptId", "ID phiếu nhập" }, { "ReceiptDetailId", "ID dòng nhập" }, { "SessionId", "ID phiên" },
+            { "LotId", "ID lot" }, { "BidId", "ID lượt giá" }, { "RegistrationId", "ID đăng ký" },
+            { "InvoiceId", "ID hóa đơn" }, { "InvoiceDetailId", "ID dòng hóa đơn" }, { "PaymentId", "ID phiếu thu" },
+            { "PayoutId", "ID chi trả" }, { "OrderId", "ID lệnh" }, { "ObligationId", "ID nghĩa vụ" },
+            { "IssueId", "ID phiếu xuất" }, { "IssueDetailId", "ID dòng xuất" }, { "ReturnId", "ID phiếu trả" },
+            { "AdjustmentId", "ID điều chỉnh" }, { "ViolationId", "ID vi phạm" }, { "ReviewId", "ID xét duyệt" },
+            { "HistoryId", "ID lịch sử" }, { "AuditLogId", "ID nhật ký" }, { "EntityId", "ID đối tượng" },
+            { "LeadingCustomerId", "Khách dẫn đầu" }, { "WinningCustomerId", "Khách thắng" },
+            { "CreatedByUserId", "Người tạo" }, { "ChangedByUserId", "Người đổi" }, { "AppraisedByUserId", "Người thẩm định" },
+            { "ApprovedByUserId", "Người duyệt" }, { "EnteredByUserId", "Người nhập" }, { "IssuedByUserId", "Người xuất" },
+            { "PaidByUserId", "Người chi" }, { "ReceivedByUserId", "Người nhận" }, { "ReturnedByUserId", "Người trả" },
+            { "CustomerCode", "Mã khách" }, { "ConsignorCode", "Mã chủ hàng" }, { "CategoryCode", "Mã danh mục" },
+            { "ItemCode", "Mã hiện vật" }, { "ContractCode", "Mã hợp đồng" }, { "ReceiptCode", "Mã phiếu nhập" },
+            { "SessionCode", "Mã phiên" }, { "InvoiceCode", "Mã hóa đơn" }, { "PaymentCode", "Mã phiếu thu" },
+            { "PayoutCode", "Mã chi trả" }, { "IssueCode", "Mã phiếu xuất" }, { "ReturnCode", "Mã phiếu trả" },
+            { "AdjustmentCode", "Mã điều chỉnh" }, { "RoleCode", "Mã nhóm" }, { "PermissionCode", "Mã quyền" },
+            { "ActionCode", "Mã thao tác" },
+            // Tên, mô tả
+            { "Name", "Tên" }, { "FullName", "Họ tên" }, { "Username", "Tên đăng nhập" }, { "RoleName", "Nhóm quyền" },
+            { "PermissionName", "Quyền" }, { "CustomerName", "Khách hàng" }, { "Customer", "Khách hàng" },
+            { "ConsignorName", "Chủ hàng" }, { "Consignor", "Chủ hàng" }, { "Owner", "Chủ hàng" }, { "OwnerName", "Chủ hàng" },
+            { "CategoryName", "Danh mục" }, { "Category", "Danh mục" }, { "ItemName", "Tên hiện vật" }, { "Item", "Hiện vật" },
+            { "SessionName", "Phiên" }, { "Session", "Phiên" }, { "Contract", "Hợp đồng" }, { "Label", "Nhãn" },
+            { "Display", "Hiển thị" }, { "Group", "Nhóm" }, { "GroupLabel", "Nhóm" }, { "GroupBy", "Nhóm theo" },
+            { "Description", "Mô tả" }, { "Notes", "Ghi chú" }, { "Detail", "Chi tiết" }, { "Reason", "Lý do" },
+            { "RepresentativeName", "Người đại diện" }, { "RecipientName", "Người nhận" }, { "Recipient", "Người nhận" },
+            { "RecipientDocument", "Giấy tờ người nhận" }, { "RecipientRelation", "Quan hệ" },
+            { "DeliveredBy", "Người giao" }, { "ReceivedBy", "Người nhận" },
+            // Liên hệ, hồ sơ
+            { "Email", "Email" }, { "Phone", "Điện thoại" }, { "Address", "Địa chỉ" }, { "Gender", "Giới tính" },
+            { "DateOfBirth", "Ngày sinh" }, { "IdentityNumber", "Số CCCD" }, { "MemberTier", "Hạng TV" },
+            { "OldTier", "Hạng cũ" }, { "NewTier", "Hạng mới" }, { "BankName", "Ngân hàng" },
+            { "BankAccount", "Số tài khoản" }, { "BankAccountHolder", "Chủ tài khoản" }, { "ConsignorType", "Loại chủ hàng" },
+            { "Paddle", "Paddle" }, { "PaddleNumber", "Paddle" }, { "BlacklistReason", "Lý do chặn" },
+            // Hiện vật
+            { "Origin", "Xuất xứ" }, { "Era", "Niên đại" }, { "Dimensions", "Kích thước" }, { "Material", "Chất liệu" },
+            { "Condition", "Tình trạng" }, { "ConditionDescription", "Tình trạng" }, { "ConditionAtReceipt", "Tình trạng khi nhận" },
+            { "ConditionAtDelivery", "Tình trạng khi giao" }, { "Location", "Vị trí" }, { "WarehouseLocation", "Vị trí kho" },
+            { "LocationAtReceipt", "Vị trí khi nhận" }, { "LocationAtIssue", "Vị trí khi xuất" }, { "AppraisalNotes", "Ghi chú thẩm định" },
+            { "PhotoPath", "Ảnh" }, { "RelativePath", "Đường dẫn" }, { "IsPrimary", "Ảnh chính" }, { "SortOrder", "Thứ tự" },
+            { "LotNumber", "Số lot" },
+            // Tiền
+            { "Amount", "Số tiền" }, { "Price", "Giá" }, { "StartingPrice", "Giá khởi điểm" }, { "ReservePrice", "Giá sàn" },
+            { "CurrentPrice", "Giá hiện tại" }, { "HammerPrice", "Giá búa" }, { "BidAmount", "Giá trả" }, { "BidIncrement", "Bước giá" },
+            { "EstimatePrice", "Giá ước tính" }, { "EstimatePriceHigh", "Ước tính tối đa" }, { "Estimated", "Giá ước tính" },
+            { "AppraisedPrice", "Giá thẩm định" }, { "HammerSubtotal", "Tổng giá búa" }, { "HammerTotal", "Tổng giá búa" },
+            { "BuyerFee", "Phí người mua" }, { "SellerFee", "Phí chủ hàng" }, { "Discount", "Giảm giá" },
+            { "VipDiscount", "Giảm giá VIP" }, { "Vat", "VAT" }, { "VatAmount", "Tiền VAT" }, { "TotalAmount", "Tổng tiền" },
+            { "TotalDue", "Phải thu" }, { "DueAmount", "Phải trả" }, { "PaidAmount", "Đã trả" }, { "Paid", "Đã trả" },
+            { "Remaining", "Còn lại" }, { "RemainingDebt", "Còn nợ" }, { "RemainingAtReview", "Còn nợ khi xét" },
+            { "Outstanding", "Còn nợ" }, { "UnpaidAmount", "Chưa thu" }, { "TotalSpent", "Tổng chi tiêu" },
+            { "DepositRequired", "Cọc yêu cầu" }, { "DepositPaid", "Đã cọc" }, { "DepositApplied", "Cọc đã trừ" },
+            { "DepositForfeited", "Cọc bị phạt" }, { "DepositRefunded", "Cọc đã hoàn" }, { "AppliedDeposit", "Cọc đã trừ" },
+            { "HeldDeposit", "Cọc đang giữ" }, { "AlreadyForfeited", "Đã phạt cọc" }, { "AdditionalForfeiture", "Phạt thêm" },
+            { "TotalForfeiture", "Tổng phạt" }, { "PayoutAmount", "Số tiền chi" }, { "PaidToSeller", "Đã trả chủ hàng" },
+            { "PendingSellerPayout", "Chờ trả chủ hàng" }, { "PlatformRevenue", "Doanh thu sàn" }, { "Revenue", "Doanh thu" },
+            { "PreviousRevenue", "Doanh thu kỳ trước" },
+            // Tỷ lệ
+            { "SellerFeeRate", "Phí chủ hàng (%)" }, { "SellerFeeRateLocked", "Phí chủ hàng (%)" },
+            { "BuyerFeeRate", "Phí người mua (%)" }, { "VatRate", "VAT (%)" }, { "VipDiscountRate", "Giảm VIP (%)" },
+            { "SuccessRate", "Tỷ lệ bán (%)" },
+            // Số lượng
+            { "Count", "Số lượng" }, { "Items", "Số hiện vật" }, { "InStock", "Trong kho" }, { "Contracts", "Số hợp đồng" },
+            { "Invoices", "Số hóa đơn" }, { "InvoiceCount", "Số hóa đơn" }, { "UnpaidInvoices", "HĐơn chưa thu" },
+            { "LotCount", "Số lot" }, { "LotsWon", "Số lot thắng" }, { "WonLots", "Số lot thắng" }, { "SoldLots", "Lot đã bán" },
+            { "UnsoldLots", "Lot không bán" }, { "Registrations", "Lượt đăng ký" }, { "CustomerCount", "Số khách" },
+            { "NewCustomers", "Khách mới" }, { "OpenSessions", "Phiên đang mở" }, { "UpcomingSessions", "Phiên sắp tới" },
+            { "FailedPasswordAttempts", "Lần sai MK" }, { "HashIterations", "Số vòng băm" }, { "Month", "Tháng" }, { "Year", "Năm" },
+            // Thời gian
+            { "CreatedAt", "Ngày tạo" }, { "UpdatedAt", "Ngày cập nhật" }, { "ChangedAt", "Thời điểm đổi" },
+            { "Date", "Ngày" }, { "Time", "Thời điểm" }, { "At", "Thời điểm" }, { "When", "Thời điểm" },
+            { "OccurredAt", "Thời điểm" }, { "From", "Từ ngày" }, { "To", "Đến ngày" }, { "StartsAt", "Bắt đầu" },
+            { "EndsAt", "Kết thúc" }, { "OpensAt", "Mở lúc" }, { "ClosesAt", "Đóng lúc" }, { "BidAt", "Thời điểm trả giá" },
+            { "RegisteredAt", "Ngày đăng ký" }, { "SignedAt", "Ngày ký" }, { "ExpiresAt", "Ngày hết hạn" },
+            { "ReceivedAt", "Ngày nhận" }, { "IssuedAt", "Ngày lập" }, { "DueAt", "Hạn thanh toán" }, { "PaidAt", "Ngày trả" },
+            { "PayoutAt", "Ngày chi" }, { "SettledAt", "Ngày tất toán" }, { "ResolvedAt", "Ngày xử lý" },
+            { "ReturnedAt", "Ngày trả hàng" }, { "AppraisedAt", "Ngày thẩm định" }, { "LastLoginAt", "Đăng nhập cuối" },
+            { "PasswordChangedAt", "Đổi MK lúc" }, { "LockedUntil", "Khóa đến" },
+            // Trạng thái
+            { "Status", "Trạng thái" }, { "State", "Trạng thái" }, { "Phase", "Giai đoạn" }, { "Result", "Kết quả" },
+            { "Outcome", "Kết quả" }, { "Review", "Cảnh báo" }, { "ReviewStatus", "Trạng thái xét" }, { "ReviewReason", "Lý do xét" },
+            { "ItemStatus", "Trạng thái" }, { "LotStatus", "Trạng thái lot" }, { "SessionStatus", "Trạng thái phiên" },
+            { "ContractStatus", "Trạng thái HĐ" }, { "CustomerStatus", "Trạng thái" }, { "ConsignorStatus", "Trạng thái" },
+            { "InvoiceStatus", "Trạng thái HĐơn" }, { "PaymentStatus", "Thanh toán" }, { "RegistrationStatus", "Trạng thái ĐK" },
+            { "ObligationStatus", "Trạng thái" }, { "OrderStatus", "Trạng thái lệnh" }, { "PayoutOrderStatus", "Trạng thái chi" },
+            { "WorkflowStatus", "Tiến trình" }, { "IsActive", "Hoạt động" }, { "Active", "Hoạt động" },
+            { "IsBlacklisted", "Bị chặn" }, { "HasOutstandingDebt", "Còn nợ" }, { "MustChangePassword", "Phải đổi MK" },
+            { "LockReason", "Lý do khóa" }, { "Selected", "Chọn" },
+            // Thanh toán, nhật ký
+            { "Type", "Loại" }, { "PaymentMethod", "Hình thức" }, { "PaymentType", "Loại thanh toán" },
+            { "DeliveryMethod", "Cách giao" }, { "AdjustmentType", "Loại điều chỉnh" }, { "ViolationType", "Loại vi phạm" },
+            { "TransactionReference", "Mã giao dịch" }, { "TransferReference", "Mã chuyển khoản" },
+            { "Action", "Thao tác" }, { "EntityName", "Đối tượng" }, { "TableName", "Bảng" }, { "TableSchema", "Schema" },
+            { "ColumnName", "Cột" }, { "SettingKey", "Tham số" }, { "SettingValue", "Giá trị" },
+            // Quyền
+            { "View", "Xem" }, { "Create", "Thêm" }, { "Edit", "Sửa" }, { "Delete", "Xóa" }, { "Print", "In" },
+            { "CanView", "Xem" }, { "CanCreate", "Thêm" }, { "CanEdit", "Sửa" }, { "CanDelete", "Xóa" }, { "CanPrint", "In/Xuất" }
+        };
         private static void HideBinaryColumns(DataGridView grid)
         {
             foreach (DataGridViewColumn column in grid.Columns)
