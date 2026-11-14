@@ -54,9 +54,12 @@ namespace AuctionArena.WinForms
             try
             {
                 var service = new ReportService();
+                var rows = service.PaymentReceipt(actor, paymentId);
+                // Bản in hiển thị hình thức thu bằng tiếng Việt.
+                foreach (var row in rows) row.PaymentMethod = Theme.Display(row.PaymentMethod, "PaymentMethod");
                 using (var f = new ReportForm("Phiếu thu thanh toán", 
                 "AuctionArena.WinForms.Reports.PaymentReceipt.rdlc", "PaymentReceiptData", 
-                service.PaymentReceipt(actor, paymentId), service.CanPrint(actor, "INVOICES")))f.ShowDialog(parent);
+                rows, service.CanPrint(actor, "INVOICES")))f.ShowDialog(parent);
             }
             catch (Exception ex)
             {
@@ -68,9 +71,11 @@ namespace AuctionArena.WinForms
             try
             {
                 var service = new ReportService();
+                var rows = service.SellerPayoutReceipt(actor, payoutId);
+                foreach (var row in rows) row.PaymentMethod = Theme.Display(row.PaymentMethod, "PaymentMethod");
                 using (var f = new ReportForm("Phiếu chi chủ hàng", 
                 "AuctionArena.WinForms.Reports.SellerPayoutReceipt.rdlc", "SellerPayoutData", 
-                service.SellerPayoutReceipt(actor, payoutId), service.CanPrint(actor, "PAYOUTS")))f.ShowDialog(parent);
+                rows, service.CanPrint(actor, "PAYOUTS")))f.ShowDialog(parent);
             }
             catch (Exception ex)
             {
@@ -88,6 +93,7 @@ namespace AuctionArena.WinForms
                     MessageBox.Show("Không tìm thấy hiện vật.");
                     return;
                 }
+                foreach (var row in rows) row.ItemStatus = Theme.Display(row.ItemStatus, "ItemStatus");
                 using (var form = new ReportForm("Nhãn hiện vật", 
                 "AuctionArena.WinForms.Reports.ItemLabel.rdlc", "ItemLabelData", 
                 rows, service.CanPrint(actor)))form.ShowDialog(parent);
@@ -113,9 +119,11 @@ namespace AuctionArena.WinForms
             try
             {
                 var service = new ReportService();
+                var rows = service.Contract(actor, id);
+                foreach (var row in rows) row.Status = Theme.Display(row.Status, "ContractStatus");
                 using (var form = new ReportForm("Hợp đồng ký gửi", 
                 "AuctionArena.WinForms.Reports.Contract.rdlc", "ContractData", 
-                service.Contract(actor, id), service.CanPrint(actor, "CONTRACTS")))
+                rows, service.CanPrint(actor, "CONTRACTS")))
                 form.ShowDialog(parent);
             }
             catch (Exception ex)
@@ -141,7 +149,9 @@ namespace AuctionArena.WinForms
         {
             try
             {
-                using (var form = new ReportForm("Phiếu xuất kho", "AuctionArena.WinForms.Reports.StockIssue.rdlc", "IssueData", new ReportService().Issue(actor, id), new ReportService().CanPrint(actor, "STOCK_ISSUES"))) form.ShowDialog(parent);
+                var rows = new ReportService().Issue(actor, id);
+                foreach (var row in rows) row.DeliveryMethod = Theme.Display(row.DeliveryMethod, "DeliveryMethod");
+                using (var form = new ReportForm("Phiếu xuất kho", "AuctionArena.WinForms.Reports.StockIssue.rdlc", "IssueData", rows, new ReportService().CanPrint(actor, "STOCK_ISSUES"))) form.ShowDialog(parent);
             }
             catch (Exception ex)
             {
@@ -177,7 +187,13 @@ namespace AuctionArena.WinForms
                 MessageBox.Show("Không có dữ liệu theo điều kiện lọc.");
                 return;
             }
-            using (var form = new ReportForm("Báo cáo "+named[kind], 
+            // Tiêu đề cửa sổ tiếng Việt; tên tệp RDLC giữ nguyên.
+            var titles = new Dictionary<string, string>
+            {
+                { "Revenue", "doanh thu tổng hợp" }, { "Session", "theo phiên" }, { "Category", "theo loại hiện vật" },
+                { "Debt", "công nợ chưa thanh toán" }, { "Payout", "chi trả chủ hàng" }
+            };
+            using (var form = new ReportForm("Báo cáo "+titles[kind], 
             "AuctionArena.WinForms.Reports."+named[kind]+".rdlc", "BusinessReportData", 
             rows, new ReportService().CanPrint(actor, "REPORTS")))form.ShowDialog(parent);
         }
@@ -271,6 +287,7 @@ namespace AuctionArena.WinForms
                 "Tất cả", "Normal", "Silver", "Gold", "VIP"
             });
             tier.SelectedIndex = 0;
+            Theme.ShowCodes("MemberTier", tier);
             var preview = Theme.Button("Xem / Làm mới", 20, 231, 230);
             Controls.Add(preview);
             var print = Theme.Button("In / Xuất PDF", 265, 231, 220);
@@ -382,7 +399,7 @@ namespace AuctionArena.WinForms
             {
                 From = from.Value.Date, To = to.Value.Date, 
                 SessionId = SelectedId(session), CategoryId = SelectedId(category), ConsignorId = SelectedId(consignor), 
-                MemberTier = tier.SelectedIndex == 0?null:tier.Text, 
+                MemberTier = tier.SelectedIndex == 0?null:Theme.Code(tier), 
                 GroupBy = new[]
                 {
                     "Day", "Month", "Session", "Category"

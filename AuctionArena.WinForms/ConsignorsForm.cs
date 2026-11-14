@@ -52,6 +52,8 @@ namespace AuctionArena.WinForms
             });
             filterStatus.SelectedIndex = 0;
             Controls.Add(filterStatus);
+            Theme.ShowCodes("ConsignorType", type, filterType);
+            Theme.ShowCodes("ConsignorStatus", filterStatus);
             var filter = Theme.Button("Áp dụng lọc", 448, 944, 165);
             Controls.Add(filter);
             filter.Click+=(s, e) => Reload();
@@ -106,8 +108,8 @@ namespace AuctionArena.WinForms
         protected override object Fetch(string q)
         {
             return service.Consignors(Actor, q, 
-            filterType.SelectedIndex<=0?null:filterType.Text, 
-            filterStatus.SelectedIndex<=0?null:filterStatus.Text);
+            filterType.SelectedIndex<=0?null:Theme.Code(filterType), 
+            filterStatus.SelectedIndex<=0?null:Theme.Code(filterStatus));
         }
         protected override void Fill(ConsignorEntity x)
         {
@@ -147,7 +149,7 @@ namespace AuctionArena.WinForms
                 ConsignorId = Current == null?0:Current.ConsignorId, ConsignorCode = code.Text, FullName = name.Text, Phone = phone.Text, IdentityNumber = identity.Text, Address = address.Text, BankName = bank.Text, BankAccount = bankAccount.Text, 
                 SellerFeeRate = string.IsNullOrWhiteSpace(fee.Text)?(decimal?)null:percentage/100m, 
                 Email = email.Text, RepresentativeName = representative.Text, BankAccountHolder = accountHolder.Text, 
-                ConsignorType = type.Text, Notes = notes.Text
+                ConsignorType = Theme.Code(type), Notes = notes.Text
             });
         }
     }

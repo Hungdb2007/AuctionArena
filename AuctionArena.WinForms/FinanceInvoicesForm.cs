@@ -36,6 +36,7 @@ namespace AuctionArena.WinForms
                 "Tất cả trạng thái", "Unpaid", "PartiallyPaid", "Paid", "Overdue", "Cancelled"
             });
             statusFilter.SelectedIndex = 0;
+            Theme.ShowCodes("InvoiceStatus", statusFilter);
             Controls.Add(statusFilter);
             dateFrom = new DateTimePicker
             {
@@ -86,6 +87,7 @@ namespace AuctionArena.WinForms
                 "Cash", "BankTransfer"
             });
             method.SelectedIndex = 0;
+            Theme.ShowCodes("PaymentMethod", method);
             Controls.Add(method);
             AddButton("Thu thanh toán", 475, 560, flags.Edit, () => 
             {
@@ -100,7 +102,7 @@ namespace AuctionArena.WinForms
                     throw new BusinessException("Số thu vượt số tiền còn nợ.");
                 }
                 string reference = null;
-                if (method.Text == "BankTransfer")
+                if (Theme.Code(method) == "BankTransfer")
                 {
                     reference = Theme.AskReason(this, "Mã xác nhận chuyển khoản ngân hàng (5–100 ký tự):");
                     if (reference == null)
@@ -109,7 +111,7 @@ namespace AuctionArena.WinForms
                     }
                 }
                 var confirmedReference = reference;
-                Execute(() => new BillingService().PayInvoice(Actor, Id("InvoiceId"), money, method.SelectedItem.ToString(), confirmedReference), 
+                Execute(() => new BillingService().PayInvoice(Actor, Id("InvoiceId"), money, Theme.Code(method), confirmedReference), 
                 "Xác nhận thu "+money.ToString("N0")+" đ cho "+row.InvoiceCode+
                 "?\nCông nợ trước khi thu: "+row.Remaining.ToString("N0")+" đ.");
             });
@@ -215,7 +217,7 @@ namespace AuctionArena.WinForms
                 }
                 // Thu trễ qua ngân hàng cũng phải có mã chuyển khoản như thu thường.
                 string reference = null;
-                if (method.Text == "BankTransfer")
+                if (Theme.Code(method) == "BankTransfer")
                 {
                     reference = Theme.AskReason(this, "Mã xác nhận chuyển khoản ngân hàng (5–100 ký tự):");
                     if (reference == null)
@@ -229,7 +231,7 @@ namespace AuctionArena.WinForms
                 "\nLý do/phê duyệt: " + reason +
                 "\nKhông tự xóa vi phạm hoặc hoàn cọc đã tịch thu.", 
                 "Kiểm tra trước khi ghi sổ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)return;
-                new BillingService().PayLateInvoiceWithApproval(Actor, row.InvoiceId, money, method.Text, reason, reference);
+                new BillingService().PayLateInvoiceWithApproval(Actor, row.InvoiceId, money, Theme.Code(method), reason, reference);
                 Reload();
                 MessageBox.Show("Đã ghi khoản thu trễ và nhật ký. Hãy đối chiếu sổ quỹ thực tế.");
             });
@@ -294,7 +296,7 @@ namespace AuctionArena.WinForms
             Theme.Safe(() => 
             {
                 Grid.DataSource = Query.Invoices(Actor, search.Text, debt.Checked, 
-                statusFilter.SelectedIndex == 0?null:statusFilter.Text, 
+                statusFilter.SelectedIndex == 0?null:Theme.Code(statusFilter), 
                 dateFrom.Checked?(DateTime?)dateFrom.Value:null, dateTo.Checked?(DateTime?)dateTo.Value:null); ShowSelected();
             });
         }

@@ -43,7 +43,8 @@ namespace AuctionArena.WinForms
                 string format = cell.OwningColumn.DefaultCellStyle.Format;
                 return ((DateTime)value).ToString(string.IsNullOrEmpty(format) ? Theme.DateTimeFormat : format);
             }
-            return value;
+            // Mã trạng thái/loại và true/false xuất đúng chữ tiếng Việt như trên bảng.
+            return Theme.CellText(cell.OwningColumn, value);
         }
         public static void Export(DataGridView grid)
         {
@@ -53,7 +54,7 @@ namespace AuctionArena.WinForms
             }
             using (var dlg = new SaveFileDialog
             {
-                Filter = "Excel (*.xlsx)|*.xlsx", FileName = "AuctionArena_Export.xlsx"
+                Filter = "Excel (*.xlsx)|*.xlsx", FileName = "AuctionArena_XuatDuLieu.xlsx"
             })
             {
                 if (dlg.ShowDialog() != DialogResult.OK)
@@ -79,7 +80,7 @@ namespace AuctionArena.WinForms
                     Part(zip, "xl/workbook.xml", w => 
                     {
                         w.WriteStartDocument(); w.WriteStartElement("workbook", "http://schemas.openxmlformats.org/spreadsheetml/2006/main");
-                        w.WriteStartElement("sheets"); w.WriteStartElement("sheet"); w.WriteAttributeString("name", "Du lieu"); w.WriteAttributeString("sheetId", "1"); w.WriteAttributeString("id", "http://schemas.openxmlformats.org/officeDocument/2006/relationships", "rId1"); w.WriteEndElement(); w.WriteEndElement(); w.WriteEndElement();
+                        w.WriteStartElement("sheets"); w.WriteStartElement("sheet"); w.WriteAttributeString("name", "Dữ liệu"); w.WriteAttributeString("sheetId", "1"); w.WriteAttributeString("id", "http://schemas.openxmlformats.org/officeDocument/2006/relationships", "rId1"); w.WriteEndElement(); w.WriteEndElement(); w.WriteEndElement();
                     });
                     Part(zip, "xl/_rels/workbook.xml.rels", w => 
                     {

@@ -117,6 +117,7 @@ namespace AuctionArena.WinForms
                 "InStock", "InAuction", "Sold", "Delivered", "Returned"
             });
             statusFilter.SelectedIndex = 0;
+            Theme.ShowCodes("ItemStatus", statusFilter);
             Controls.Add(statusFilter);
             categoryFilter = new ComboBox
             {
@@ -188,7 +189,16 @@ namespace AuctionArena.WinForms
                 })
                 {
                     Theme.Apply(dialog);
-                    var data = Theme.Grid(15, 18, 725, 485); data.DataSource = service.ItemJourney(Actor, Current.ItemId);
+                    var data = Theme.Grid(15, 18, 725, 485);
+                    var journey = service.ItemJourney(Actor, Current.ItemId);
+                    // Dòng lot ghi "mã phiên #số – trạng thái": đổi mã trạng thái sang tiếng Việt.
+                    foreach (var row in journey)
+                    {
+                        int cut = row.Detail == null ? -1 : row.Detail.LastIndexOf(" – ");
+                        if (row.Phase == "Lot/phiên" && cut >= 0)
+                        row.Detail = row.Detail.Substring(0, cut + 3) + Theme.Display(row.Detail.Substring(cut + 3), "LotStatus");
+                    }
+                    data.DataSource = journey;
                     data.Anchor = AnchorStyles.Top|AnchorStyles.Bottom|AnchorStyles.Left|AnchorStyles.Right;
                     dialog.Controls.Add(data); dialog.ShowDialog(this);
                 }
@@ -317,7 +327,7 @@ namespace AuctionArena.WinForms
             (int?)((FilterOption)categoryFilter.SelectedItem).Id:null, 
             ownerFilter.SelectedItem is FilterOption && ((FilterOption)ownerFilter.SelectedItem).Id>0?
             (int?)((FilterOption)ownerFilter.SelectedItem).Id:null, 
-            statusFilter.SelectedIndex<=0?null:statusFilter.Text, minFilter, maxFilter);
+            statusFilter.SelectedIndex<=0?null:Theme.Code(statusFilter), minFilter, maxFilter);
         }
         // Danh sách chọn chỉ gồm loại/chủ hàng đang hoạt động, cộng thêm loại/chủ hàng hiện tại của hiện vật.
         void BindChoices(int categoryId, int consignorId)

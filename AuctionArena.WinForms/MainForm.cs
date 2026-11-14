@@ -281,7 +281,7 @@ namespace AuctionArena.WinForms
                 var grants = permissions;
                 var rows = new System.Collections.Generic.List<string>();
                 if (Allowed(grants, "SESSIONS"))rows.Add("Phiên đang mở: "+metric.OpenSessions+"  •  Sắp diễn ra: "+metric.UpcomingSessions);
-                if (Allowed(grants, "ITEMS"))rows.Add("Hiện vật Trong kho: "+metric.InStock);
+                if (Allowed(grants, "ITEMS"))rows.Add("Hiện vật trong kho: "+metric.InStock);
                 if (Allowed(grants, "LOTS"))rows.Add("Lot đã bán trong kỳ: "+metric.SoldLots);
                 if (Allowed(grants, "REPORTS"))
                 {
@@ -383,7 +383,7 @@ namespace AuctionArena.WinForms
                 });
                 foreach (var log in logs)recent.Controls.Add(new Label
                 {
-                    Text = log.At.ToString("dd/MM HH:mm")+" • "+log.Action+" • "+log.Description, 
+                    Text = log.At.ToString("dd/MM HH:mm")+" • "+Theme.AuditAction(log.Action)+" • "+Theme.AuditText(log.Description), 
                     Height = 29, ForeColor = Theme.Text, AutoEllipsis = true
                 });
                 list.Controls.Add(recent);

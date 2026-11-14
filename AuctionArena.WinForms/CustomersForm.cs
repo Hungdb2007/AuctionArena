@@ -95,7 +95,7 @@ namespace AuctionArena.WinForms
             });
             gender.SelectedIndex = 0;
             notes = Field("Ghi chú khách", 435, 785, 405);
-            blackReason = Field("Lý do blacklist (chỉ xem)", 18, 900, 710);
+            blackReason = Field("Lý do vào danh sách đen (chỉ xem)", 18, 900, 710);
             ReadOnlyAlways(blackReason);
             tierFilter = new ComboBox
             {
@@ -117,6 +117,9 @@ namespace AuctionArena.WinForms
             });
             statusFilter.SelectedIndex = 0;
             Controls.Add(statusFilter);
+            Theme.ShowCodes("MemberTier", tier, tierFilter);
+            Theme.ShowCodes("Gender", gender);
+            Theme.ShowCodes("CustomerStatus", statusFilter);
             var apply = Theme.Button("Lọc hồ sơ", 405, 1005, 142);
             Controls.Add(apply);
             apply.Click+=(s, e) => Reload();
@@ -128,7 +131,7 @@ namespace AuctionArena.WinForms
                 statusFilter.SelectedIndex = 0;
                 Reload();
             };
-            var blacklistButton = Theme.Button("Đưa vào/gỡ blacklist", 18, 1065, 225);
+            var blacklistButton = Theme.Button("Đưa vào/gỡ danh sách đen", 18, 1065, 225);
             blacklistButton.Enabled = flags.Edit;
             Controls.Add(blacklistButton);
             blacklistButton.Click+=(s, e) => Theme.Safe(() => 
@@ -139,13 +142,13 @@ namespace AuctionArena.WinForms
                 }
                 using (var dialog = new Form
                 {
-                    Text = "Thay đổi trạng thái blacklist", Width = 500, Height = 255, StartPosition = FormStartPosition.CenterParent
+                    Text = "Thay đổi trạng thái danh sách đen", Width = 500, Height = 255, StartPosition = FormStartPosition.CenterParent
                 })
                 {
                     Theme.Apply(dialog);
                     dialog.Controls.Add(Theme.Label("Nhập lý do (5–300 ký tự):", 15, 15, 440));
                     var reason = Theme.Input(15, 50, 445); reason.MaxLength = 300; dialog.Controls.Add(reason);
-                    var confirm = Theme.Button(black.Checked?"Gỡ blacklist":"Đưa vào blacklist", 15, 115, 205); dialog.Controls.Add(confirm);
+                    var confirm = Theme.Button(black.Checked?"Gỡ danh sách đen":"Đưa vào danh sách đen", 15, 115, 205); dialog.Controls.Add(confirm);
                     confirm.Click+=(sender, args) => Theme.Safe(() => 
                     {
                         service.SetBlacklist(Actor, Current.CustomerId, !black.Checked, reason.Text);
@@ -251,8 +254,8 @@ namespace AuctionArena.WinForms
         protected override object Fetch(string q)
         {
             return service.Customers(Actor, q, 
-            tierFilter.SelectedIndex<=0?null:tierFilter.Text, 
-            statusFilter.SelectedIndex<=0?null:statusFilter.Text);
+            tierFilter.SelectedIndex<=0?null:Theme.Code(tierFilter), 
+            statusFilter.SelectedIndex<=0?null:Theme.Code(statusFilter));
         }
         protected override void Fill(CustomerEntity x)
         {
@@ -299,8 +302,8 @@ namespace AuctionArena.WinForms
         {
             service.SaveCustomer(Actor, new CustomerEntity
             {
-                CustomerId = Current == null?0:Current.CustomerId, CustomerCode = code.Text, FullName = name.Text, Phone = phone.Text, Email = email.Text, IdentityNumber = identity.Text, MemberTier = tier.Text, Address = address.Text, Notes = notes.Text, 
-                Gender = gender.Text, DateOfBirth = dob.Checked?(DateTime?)dob.Value.Date:null, 
+                CustomerId = Current == null?0:Current.CustomerId, CustomerCode = code.Text, FullName = name.Text, Phone = phone.Text, Email = email.Text, IdentityNumber = identity.Text, MemberTier = Theme.Code(tier), Address = address.Text, Notes = notes.Text, 
+                Gender = Theme.Code(gender), DateOfBirth = dob.Checked?(DateTime?)dob.Value.Date:null, 
                 PhotoData = selectedPhoto
             });
         }

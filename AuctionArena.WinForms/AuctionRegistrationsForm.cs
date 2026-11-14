@@ -33,6 +33,7 @@ namespace AuctionArena.WinForms
                 "Cash", "BankTransfer"
             });
             method.SelectedIndex = 0;
+            Theme.ShowCodes("PaymentMethod", method);
             Controls.Add(Theme.Label("Phương thức", 680, 440));
             Controls.Add(method);
             Action("Đăng ký khách", 20, 535, flags.Create, () =>
@@ -41,7 +42,7 @@ namespace AuctionArena.WinForms
                 throw new BusinessException("Chưa chọn khách tham gia.");
                 new RegistrationService().Register(Actor, sessionId, (int)customers.SelectedValue, PositiveInt(paddle.Text));
             });
-            Action("Thu tiền cọc", 220, 535, flags.Edit, () => new DepositService().Collect(Actor, SelectedId(Grid, "RegistrationId"), Money(deposit.Text), method.Text));
+            Action("Thu tiền cọc", 220, 535, flags.Edit, () => new DepositService().Collect(Actor, SelectedId(Grid, "RegistrationId"), Money(deposit.Text), Theme.Code(method)));
             Action("Hoàn tiền cọc", 420, 535, flags.Edit, () => 
             {
                 int id = SelectedId(Grid, "RegistrationId");

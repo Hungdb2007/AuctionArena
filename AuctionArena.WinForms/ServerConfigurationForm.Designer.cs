@@ -36,7 +36,7 @@
             this.btnSave = new System.Windows.Forms.Button();
             this.SuspendLayout();
 
-            this.lblServer.Text = "Tên Server";
+            this.lblServer.Text = "Tên máy chủ";
             this.lblServer.Location = new System.Drawing.Point(25, 38);
             this.lblServer.Size = new System.Drawing.Size(140, 27);
             this.server.Name = "server";

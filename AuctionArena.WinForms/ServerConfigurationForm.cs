@@ -83,7 +83,7 @@ namespace AuctionArena.WinForms
         private void Save()
         {
             if (string.IsNullOrWhiteSpace(server.Text) || string.IsNullOrWhiteSpace(database.Text))
-            throw new InvalidOperationException("Hãy nhập tên Server và Database.");
+            throw new InvalidOperationException("Hãy nhập tên máy chủ và cơ sở dữ liệu.");
             var value = new SqlConnectionStringBuilder
             {
                 DataSource = server.Text.Trim(), 
@@ -105,7 +105,7 @@ namespace AuctionArena.WinForms
             SaveVerifiedConnection(verifiedConnectionString);
             MessageBox.Show(
             "Đã xác minh cơ sở dữ liệu và tài khoản đăng nhập.\n" +
-            "Server đã lưu: " + new SqlConnectionStringBuilder(verifiedConnectionString).DataSource +
+            "Máy chủ đã lưu: " + new SqlConnectionStringBuilder(verifiedConnectionString).DataSource +
             "\n\nỨng dụng sẽ mở lại với kết nối vừa lưu.", 
             "Auction Arena", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;

@@ -69,7 +69,7 @@ namespace AuctionArena.WinForms
                 : latest.StartingPrice;
                 bid.Text = giaTiepTheo.ToString("0.##");
             });
-            place = Theme.Button("Ghi nhận bid", 790, 529, 190);
+            place = Theme.Button("Ghi nhận giá", 790, 529, 190);
             place.Enabled = canBid;
             Controls.Add(place);
             //Safe: Bắt lỗi thao tác giao diện và thông báo.; FindPaddle: Tìm khách từ số thẻ nhập.; ToString: Cung cấp nhãn hiển thị cho đối tượng lựa chọn.        
@@ -83,7 +83,7 @@ namespace AuctionArena.WinForms
                 if (latest == null)
                 throw new BusinessException("Chưa tải lot.");
                 decimal amount; if (!decimal.TryParse(bid.Text, out amount) || amount<=0)throw new BusinessException("Giá trả không hợp lệ.");
-                string msg = "Ghi bid lot #"+latest.LotNumber+"\nThẻ: "+option.PaddleNumber+" – "+option.CustomerName+
+                string msg = "Ghi giá trả lot #"+latest.LotNumber+"\nThẻ: "+option.PaddleNumber+" – "+option.CustomerName+
                 "\nGiá: "+amount.ToString("N0")+" đ?";
                 if (MessageBox.Show(msg, "Xác nhận giá đấu trực tiếp", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 {
@@ -189,7 +189,7 @@ namespace AuctionArena.WinForms
                 var option = latest.LeadingCustomerId.HasValue?
                 currentPaddles.FirstOrDefault(x => x.CustomerId == latest.LeadingCustomerId.Value):null;
                 leader.Text = "Paddle dẫn đầu: "+(option == null?"Chưa có":option.PaddleNumber.ToString());
-                status.Text = "Trạng thái: "+latest.LotStatus+" · Bước giá: "+latest.BidIncrement.ToString("N0")+" đ";
+                status.Text = "Trạng thái: "+Theme.Display(latest.LotStatus, "LotStatus")+" · Bước giá: "+latest.BidIncrement.ToString("N0")+" đ";
                 var seconds = (int)Math.Ceiling((latest.ClosesAt-DateTime.Now).TotalSeconds);
                 clock.Text = "Còn: "+(seconds<=0?"Đã hết giờ":Countdown(TimeSpan.FromSeconds(seconds)));
                 place.Enabled = canBid && latest.LotStatus == "Open" && seconds>0;

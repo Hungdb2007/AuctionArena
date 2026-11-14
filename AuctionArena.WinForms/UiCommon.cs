@@ -172,7 +172,40 @@ namespace AuctionArena.WinForms
                 foreach (DataGridViewColumn column in grid.Columns)
                 StyleColumn(column);
             };
-            grid.DataError += (sender, args) => 
+            // Chỉ đổi chữ hiển thị; Value/DataBoundItem vẫn giữ mã gốc để Form và Service dùng.
+            grid.CellFormatting += (sender, args) =>
+            {
+                if (args.RowIndex < 0 || args.ColumnIndex < 0 || args.Value == null)
+                return;
+                var column = grid.Columns[args.ColumnIndex];
+                if (args.Value is bool && !(column is DataGridViewCheckBoxColumn))
+                {
+                    args.Value = (bool)args.Value ? "Có" : "Không";
+                    args.FormattingApplied = true;
+                    return;
+                }
+                var text = args.Value as string;
+                string property = CodeColumn(column);
+                if (text != null && property == null && column.DataPropertyName == "Description")
+                {
+                    string audit = AuditText(text);
+                    if (audit != text)
+                    {
+                        args.Value = audit;
+                        args.FormattingApplied = true;
+                    }
+                    return;
+                }
+                if (text == null || property == null)
+                return;
+                string vietnamese = Display(text, property);
+                if (vietnamese != text)
+                {
+                    args.Value = vietnamese;
+                    args.FormattingApplied = true;
+                }
+            };
+            grid.DataError += (sender, args) =>
             {
                 // Một giá trị hiển thị lỗi không được làm sập toàn bộ Form.
                 System.Diagnostics.Debug.WriteLine("Grid: " + args.Exception);
@@ -204,6 +237,9 @@ namespace AuctionArena.WinForms
             int width = 150;
             if (name.Contains("description") || name.Contains("mô tả") || name.Contains("ghi chú"))
             width = 270;
+            // Trạng thái/loại hiển thị tiếng Việt dài hơn mã gốc (vd "Thanh toán một phần").
+            else if (CodeColumn(column) != null)
+            width = 200;
             else if (name.Contains("itemname") || name.Contains("fullname") || 
             name.Contains("customer") || name.Contains("khách") || name.Contains("hiện vật"))
             width = 225;
@@ -369,6 +405,154 @@ namespace AuctionArena.WinForms
             { "View", "Xem" }, { "Create", "Thêm" }, { "Edit", "Sửa" }, { "Delete", "Xóa" }, { "Print", "In" },
             { "CanView", "Xem" }, { "CanCreate", "Thêm" }, { "CanEdit", "Sửa" }, { "CanDelete", "Xóa" }, { "CanPrint", "In/Xuất" }
         };
+        // Mã trạng thái/loại lưu trong CSDL bằng tiếng Anh -> chữ tiếng Việt chỉ để hiển thị.
+        // Không dùng bảng này khi ghi dữ liệu hoặc so sánh nghiệp vụ.
+        private static readonly Dictionary<string, string> Codes = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            // Trạng thái chung
+            { "Draft", "Nháp" }, { "Planned", "Đã lên lịch" }, { "Open", "Đang mở" }, { "Closed", "Đã đóng" },
+            { "Cancelled", "Đã hủy" }, { "Active", "Hoạt động" }, { "Inactive", "Ngừng hoạt động" },
+            { "Blacklist", "Danh sách đen" }, { "Blocked", "Bị chặn" }, { "Pending", "Chờ xử lý" },
+            { "Settled", "Đã tất toán" }, { "Resolved", "Đã xử lý" }, { "Confirmed", "Đã xác nhận" },
+            // Lot
+            { "Sold", "Đã bán" }, { "Unsold", "Không bán được" }, { "ReserveNotMet", "Không đạt giá sàn" },
+            { "Defaulted", "Khách không thanh toán" },
+            // Hiện vật
+            { "PendingAppraisal", "Chờ thẩm định" }, { "NeedInfo", "Cần bổ sung" }, { "Approved", "Đã duyệt" },
+            { "Rejected", "Từ chối" }, { "InStock", "Trong kho" }, { "InAuction", "Đang đấu giá" },
+            { "Delivered", "Đã giao" }, { "Returned", "Đã trả chủ hàng" },
+            // Hóa đơn
+            { "Unpaid", "Chưa thanh toán" }, { "PartiallyPaid", "Thanh toán một phần" }, { "Paid", "Đã thanh toán" },
+            { "Overdue", "Quá hạn" },
+            // Hình thức và loại thanh toán
+            { "Cash", "Tiền mặt" }, { "BankTransfer", "Chuyển khoản" }, { "Internal", "Bù trừ nội bộ" },
+            { "Deposit", "Thu cọc" }, { "Invoice", "Thu hóa đơn" }, { "Refund", "Hoàn cọc" }, { "Forfeit", "Tịch thu cọc" },
+            { "DepositTransfer", "Chuyển cọc vào hóa đơn" }, { "DepositTransferReversal", "Hoàn chuyển cọc" },
+            { "DepositTransferForfeit", "Tịch thu cọc đã chuyển" },
+            // Giao hàng, vi phạm
+            { "AtVenue", "Tại sàn" }, { "Delivery", "Giao tận nơi" },
+            { "NonPayment", "Không thanh toán" }, { "BiddingMisconduct", "Vi phạm khi trả giá" }, { "Other", "Khác" },
+            // Hạng thành viên, giới tính, loại chủ hàng
+            { "Normal", "Thường" }, { "Silver", "Bạc" }, { "Gold", "Vàng" }, { "VIP", "VIP" },
+            { "Male", "Nam" }, { "Female", "Nữ" },
+            { "Individual", "Cá nhân" }, { "Organization", "Tổ chức" }, { "Company", "Doanh nghiệp" }
+        };
+        // context là tên cột/ngữ cảnh: cùng một mã có thể đọc khác nhau (Open của lot là "Đang đấu giá").
+        public static string Display(string code, string context = null)
+        {
+            if (string.IsNullOrEmpty(code))
+            return code;
+            string key = (context ?? "").ToLowerInvariant();
+            if ((key.Contains("lot") || key == "state") && code == "Open") return "Đang đấu giá";
+            if ((key.Contains("lot") || key == "state") && code == "Planned") return "Chờ đấu giá";
+            if (key.Contains("registration") && code == "Pending") return "Chờ nộp cọc";
+            if ((key.Contains("registration") || key.Contains("contract")) && code == "Active") return "Hiệu lực";
+            if ((key.Contains("registration") || key.Contains("contract")) && code == "Closed") return "Đã kết thúc";
+            if ((key.Contains("order") || key.Contains("payout")) && code == "Pending") return "Chờ chi";
+            if ((key.Contains("order") || key.Contains("payout")) && code == "Paid") return "Đã chi";
+            if (key.Contains("review") && code == "Open") return "Chưa xử lý";
+            string text;
+            return Codes.TryGetValue(code, out text) ? text : code;
+        }
+        // Cột chứa mã cần dịch: ...Status, ...Type, ...Method, ...Tier, Gender, State.
+        private static string CodeColumn(DataGridViewColumn column)
+        {
+            string property = string.IsNullOrEmpty(column.DataPropertyName) ? column.Name : column.DataPropertyName;
+            if (string.IsNullOrEmpty(property))
+            return null;
+            if (property.EndsWith("Status", StringComparison.OrdinalIgnoreCase) || property.EndsWith("Type", StringComparison.OrdinalIgnoreCase) ||
+                property.EndsWith("Method", StringComparison.OrdinalIgnoreCase) || property.EndsWith("Tier", StringComparison.OrdinalIgnoreCase) ||
+                property == "Gender" || property == "State")
+            return property;
+            return null;
+        }
+        // Chữ hiển thị của một ô bảng (dùng chung cho xuất Excel): mã -> tiếng Việt, true/false -> Có/Không.
+        public static object CellText(DataGridViewColumn column, object value)
+        {
+            if (value is bool)
+            return (bool)value ? "Có" : "Không";
+            var text = value as string;
+            if (text != null && column != null && column.DataPropertyName == "Description")
+            return AuditText(text);
+            string property = column == null ? null : CodeColumn(column);
+            return text != null && property != null ? Display(text, property) : value;
+        }
+        // ComboBox chứa mã: Items vẫn là mã (SelectedItem = mã), chỉ phần chữ hiện ra là tiếng Việt.
+        // Đọc mã đã chọn bằng Theme.Code(combo), không dùng combo.Text (Text là chữ tiếng Việt).
+        public static void ShowCodes(string context, params ComboBox[] boxes)
+        {
+            foreach (var box in boxes)
+            {
+                box.FormattingEnabled = true;
+                box.Format += (sender, args) =>
+                {
+                    var code = args.ListItem as string;
+                    if (code != null)
+                    args.Value = Display(code, context);
+                };
+            }
+        }
+        public static string Code(ComboBox box)
+        {
+            return box.SelectedItem as string;
+        }
+        // Mã thao tác trong nhật ký -> mô tả ngắn tiếng Việt (bảng tổng quan).
+        private static readonly Dictionary<string, string> Actions = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "INITIAL_ADMIN_CREATED", "Tạo quản trị viên đầu tiên" }, { "LOGIN", "Đăng nhập" }, { "LOGOUT", "Đăng xuất" }, { "LOGIN_TEMP_LOCK", "Tạm khóa đăng nhập" },
+            { "PASSWORD_CHANGE", "Đổi mật khẩu" }, { "PASSWORD_TEMP_LOCK", "Tạm khóa do sai mật khẩu" },
+            { "USER_SAVE", "Lưu tài khoản" }, { "USER_DELETE", "Xóa tài khoản" }, { "USER_LOCK_INSTEAD_DELETE", "Khóa tài khoản" },
+            { "USER_PASSWORD_RESET", "Đặt lại mật khẩu" }, { "ROLE_SAVE", "Lưu nhóm quyền" }, { "ROLE_DELETE", "Xóa nhóm quyền" },
+            { "ROLE_CLONE", "Nhân bản nhóm quyền" }, { "ROLE_PERMISSIONS", "Phân quyền" },
+            { "CUSTOMER_SAVE", "Lưu khách hàng" }, { "CUSTOMER_DELETE", "Xóa khách hàng" }, { "CUSTOMER_INACTIVE", "Ngừng khách hàng" },
+            { "CUSTOMER_TIER", "Đổi hạng khách" }, { "CUSTOMER_PHOTO_REMOVE", "Xóa ảnh khách" },
+            { "CUSTOMER_BLACKLIST", "Đưa vào danh sách đen" }, { "CUSTOMER_UNBLACKLIST", "Gỡ danh sách đen" },
+            { "CONSIGNOR_SAVE", "Lưu chủ hàng" }, { "CONSIGNOR_DELETE", "Xóa chủ hàng" }, { "CONSIGNOR_INACTIVE", "Ngừng chủ hàng" },
+            { "CATEGORY_SAVE", "Lưu loại hiện vật" }, { "CATEGORY_DELETE", "Xóa loại hiện vật" }, { "CATEGORY_INACTIVE", "Ngừng loại hiện vật" },
+            { "ITEM_SAVE", "Lưu hiện vật" }, { "ITEM_DELETE", "Xóa hiện vật" }, { "ITEM_APPRAISE", "Thẩm định hiện vật" },
+            { "ITEM_IMAGE_ADD", "Thêm ảnh hiện vật" }, { "ITEM_IMAGE_PRIMARY", "Đặt ảnh chính" }, { "ITEM_IMAGE_REMOVE", "Xóa ảnh hiện vật" },
+            { "CONTRACT_SIGN", "Ký hợp đồng" }, { "CANCEL_CONTRACT", "Hủy hợp đồng" }, { "EXTEND_CONTRACT", "Gia hạn hợp đồng" },
+            { "CONTRACT_DETAIL_RELEASE", "Gỡ hiện vật khỏi hợp đồng" }, { "CONFIRM_STOCK_RECEIPT", "Nhập kho" },
+            { "SAVE_STOCK_ISSUE_DRAFT", "Lưu phiếu xuất nháp" }, { "CANCEL_STOCK_ISSUE_DRAFT", "Hủy phiếu xuất nháp" },
+            { "STOCK_ISSUE", "Xuất kho bàn giao" }, { "RETURN_TO_OWNER", "Trả hiện vật cho chủ hàng" }, { "REQUEUE_UNSOLD", "Đưa lại hàng chưa bán" },
+            { "SAVE_SESSION", "Lưu phiên" }, { "CLONE_SESSION", "Nhân bản phiên" }, { "SCHEDULE_SESSION", "Duyệt lịch phiên" },
+            { "OPEN_SESSION", "Mở phiên" }, { "CLOSE_SESSION", "Đóng phiên" }, { "CANCEL_SESSION", "Hủy phiên" },
+            { "RENUMBER_LOTS", "Đánh lại số lot" }, { "CREATE_LOT", "Tạo lot" }, { "CREATE_LOTS_BATCH", "Tạo nhiều lot" },
+            { "OPEN_LOT", "Mở lot" }, { "CLOSE_LOT", "Chốt lot" }, { "BID", "Ghi giá trả" }, { "REGISTER", "Đăng ký phiên" },
+            { "COLLECT_DEPOSIT", "Thu cọc" }, { "REFUND_DEPOSIT", "Hoàn cọc" }, { "REVERSE_DEPOSIT_TRANSFER", "Hoàn chuyển cọc" },
+            { "CREATE_INVOICE", "Lập hóa đơn" }, { "PAY_INVOICE", "Thu hóa đơn" }, { "LATE_INVOICE_PAYMENT", "Thu hóa đơn trễ hạn" },
+            { "CANCEL_UNCOLLECTED_INVOICE", "Hủy hóa đơn chưa thu" }, { "PAYMENT_OVERDUE", "Hóa đơn quá hạn" },
+            { "OPEN_OVERDUE_REVIEW", "Mở biên bản đối soát" }, { "DEFAULT_REAUCTION", "Xử lý vỡ thanh toán" },
+            { "CONFIRM_SELLER_FEE", "Chốt phí chủ hàng" }, { "PREPARE_PAYOUT", "Lập lệnh chi" }, { "PREPARE_PAYOUT_BATCH", "Lập lệnh chi hàng loạt" },
+            { "CANCEL_PAYOUT_ORDER", "Hủy lệnh chi" }, { "REOPEN_PAYOUT_ORDER", "Mở lại lệnh chi" }, { "SELLER_PAYOUT", "Chi trả chủ hàng" }
+        };
+        public static string AuditAction(string code)
+        {
+            string text;
+            return code != null && Actions.TryGetValue(code, out text) ? text : code;
+        }
+        // Một số mô tả nhật ký có chứa mã (vd "Chốt lot: Sold", "Đổi hạng: Normal → VIP"): chỉ đổi đúng các mẫu này.
+        private static readonly System.Text.RegularExpressions.Regex AuditLotClose =
+            new System.Text.RegularExpressions.Regex(@"^Chốt lot: (\w+)$");
+        private static readonly System.Text.RegularExpressions.Regex AuditTier =
+            new System.Text.RegularExpressions.Regex(@"^Đổi hạng: (\w+|\(mới\)) → (\w+)$");
+        private static readonly System.Text.RegularExpressions.Regex AuditInvoiceCancel =
+            new System.Text.RegularExpressions.Regex(@"^(\w+) -> Cancelled; ");
+        public static string AuditText(string description)
+        {
+            if (string.IsNullOrEmpty(description))
+            return description;
+            var m = AuditLotClose.Match(description);
+            if (m.Success)
+            return "Chốt lot: " + Display(m.Groups[1].Value, "LotStatus");
+            m = AuditTier.Match(description);
+            if (m.Success)
+            return "Đổi hạng: " + Display(m.Groups[1].Value, "MemberTier") + " → " + Display(m.Groups[2].Value, "MemberTier");
+            m = AuditInvoiceCancel.Match(description);
+            if (m.Success)
+            return Display(m.Groups[1].Value, "InvoiceStatus") + " → Đã hủy; " + description.Substring(m.Length);
+            return description;
+        }
         private static void HideBinaryColumns(DataGridView grid)
         {
             foreach (DataGridViewColumn column in grid.Columns)

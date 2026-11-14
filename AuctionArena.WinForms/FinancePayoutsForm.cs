@@ -26,6 +26,7 @@ namespace AuctionArena.WinForms
                 "Cash", "BankTransfer"
             });
             payoutMethod.SelectedIndex = 0;
+            Theme.ShowCodes("PaymentMethod", payoutMethod);
             Controls.Add(payoutMethod);
             Controls.Add(Theme.Label("Các lot đủ điều kiện chi trả", 20, 332, 350));
             eligible = Theme.Grid(20, 365, 1060, 190);
@@ -91,7 +92,7 @@ namespace AuctionArena.WinForms
                 {
                     throw new BusinessException("Cần lập lệnh chờ chi trước khi xác nhận đã trả tiền.");
                 }
-                var transfer = payoutMethod.Text == "BankTransfer";
+                var transfer = Theme.Code(payoutMethod) == "BankTransfer";
                 if (transfer && (string.IsNullOrWhiteSpace(row.BankName) || string.IsNullOrWhiteSpace(row.BankAccount)))
                 throw new BusinessException("Chủ hàng chưa có đủ thông tin ngân hàng và số tài khoản; vui lòng sửa hồ sơ chủ hàng.");
                 string bankText = transfer ? "\nNgân hàng: "+row.BankName+"\nSố tài khoản: "+row.BankAccount : "";
@@ -100,7 +101,7 @@ namespace AuctionArena.WinForms
                 {
                     reference = Theme.AskReason(this, "Mã giao dịch đã chuyển khoản (5–100 ký tự):"); if (reference == null)return;
                 }
-                Execute(() => new SettlementService().PaySeller(Actor, id, payoutMethod.Text, reference), 
+                Execute(() => new SettlementService().PaySeller(Actor, id, Theme.Code(payoutMethod), reference), 
                 "Chủ hàng: "+row.Consignor+"\nGiá búa: "+row.HammerPrice.ToString("N0")+
                 " đ\nPhí bán: "+row.SellerFee.Value.ToString("N0")+
                 " đ\nTHỰC CHI: "+row.PayoutAmount.Value.ToString("N0")+
